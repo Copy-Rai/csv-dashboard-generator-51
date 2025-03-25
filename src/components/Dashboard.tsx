@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Eye, MousePointer, ArrowRightLeft, DollarSign, MessageCircle } from "lucide-react";
 import MetricCard from './MetricCard';
@@ -114,29 +113,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
         />
       </div>
 
-      {/* Tarjeta de mentor debajo del título principal */}
-      <Card className="border border-[#FFC400]/30 bg-[#FFC400]/5 shadow-md mb-10">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex-1">
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                🧠 <span>¿Tienes dudas con tu informe?</span>
-              </h3>
-              <p className="text-muted-foreground mt-2">
-                Habla con tu mentor GenIA y te ayudará a interpretar los resultados paso a paso.
-              </p>
-            </div>
-            <Button 
-              onClick={() => window.open(mentorUrl, '_blank')}
-              className="bg-[#FFC400] hover:bg-[#E5B200] text-black shadow-md px-5 py-6 mt-2 md:mt-0"
-              size="lg"
-            >
-              <MessageCircle className="mr-2 h-5 w-5" /> 🧠 Habla con tu mentor GenIA
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       <div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard 
@@ -174,7 +150,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       <InsightsSection data={data} />
       <MentorSection data={data} />
       
-      <div className="mt-16 mb-20 text-center">
+      <div className="mt-16 mb-8 text-center">
         <p className="text-muted-foreground mb-4">
           ¿Tienes dudas sobre tu informe? Sube tu PDF o CSV y habla con tu mentor GenIA. Te lo explicará paso a paso.
         </p>
