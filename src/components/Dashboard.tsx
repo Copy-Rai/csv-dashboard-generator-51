@@ -124,6 +124,15 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
 
   return (
     <div className="space-y-8 w-full max-w-7xl mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <img 
+          src="/lovable-uploads/24f1bd87-3048-4b2c-bace-8ad51f9b5e9d.png" 
+          alt="Coonic Logo" 
+          className="h-12" 
+        />
+        <h2 className="text-2xl font-bold">Dashboard de Marketing</h2>
+      </div>
+      
       <div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard 
@@ -166,8 +175,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
         {/* Export PDF Card */}
         <Card className="rounded-xl border border-gray-200 shadow-sm bg-white">
           <CardContent className="p-8 flex flex-col items-center text-center">
-            <div className="w-16 h-16 rounded-full bg-[#FFC400]/20 flex items-center justify-center mb-5">
-              <FileText className="h-8 w-8 text-[#FFC400]" />
+            <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-5">
+              <FileText className="h-8 w-8 text-primary" />
             </div>
             <h3 className="text-2xl font-semibold mb-2">¿Quieres guardar este análisis?</h3>
             <p className="text-muted-foreground mb-6 max-w-md">
@@ -175,7 +184,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
             </p>
             <Button 
               onClick={handleExportPDF}
-              className="bg-[#FFC400] hover:bg-[#E5B200] text-black shadow-md px-6 py-6 font-medium"
+              className="bg-primary hover:bg-primary/80 text-white shadow-md px-6 py-6 font-medium"
               size="lg"
             >
               <FileText className="mr-2 h-5 w-5" /> Exportar informe como PDF
@@ -186,23 +195,23 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
         {/* Mentor Card */}
         <Card className="rounded-xl border border-gray-200 shadow-sm bg-[#FFF9E6]">
           <CardContent className="p-8 flex flex-col items-center text-center">
-            <div className="w-16 h-16 rounded-full bg-[#FFC400]/20 flex items-center justify-center mb-5">
+            <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-5">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 17.5C15.5899 17.5 18.5 14.5899 18.5 11C18.5 7.41015 15.5899 4.5 12 4.5C8.41015 4.5 5.5 7.41015 5.5 11C5.5 14.5899 8.41015 17.5 12 17.5Z" stroke="#FFC400" strokeWidth="1.5"/>
-                <path d="M7 13.5L7.5 12M17 13.5L16.5 12M11 7.5L9.5 9.5M13 7.5L14.5 9.5" stroke="#FFC400" strokeWidth="1.5" strokeLinecap="round"/>
-                <path d="M8.5 17.5L7.5 21.5M15.5 17.5L16.5 21.5" stroke="#FFC400" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M12 17.5C15.5899 17.5 18.5 14.5899 18.5 11C18.5 7.41015 15.5899 4.5 12 4.5C8.41015 4.5 5.5 7.41015 5.5 11C5.5 14.5899 8.41015 17.5 12 17.5Z" stroke="#D52B1E" strokeWidth="1.5"/>
+                <path d="M7 13.5L7.5 12M17 13.5L16.5 12M11 7.5L9.5 9.5M13 7.5L14.5 9.5" stroke="#D52B1E" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M8.5 17.5L7.5 21.5M15.5 17.5L16.5 21.5" stroke="#D52B1E" strokeWidth="1.5" strokeLinecap="round"/>
               </svg>
             </div>
             <h3 className="text-2xl font-semibold mb-2">¿Tienes dudas con tu informe?</h3>
             <p className="text-muted-foreground mb-6 max-w-md">
-              Habla con tu mentor GenIA y te ayudará a interpretar los resultados paso a paso.
+              Habla con tu mentor y te ayudará a interpretar los resultados paso a paso.
             </p>
             <Button 
               onClick={() => window.open(mentorUrl, '_blank')}
-              className="bg-[#FFC400] hover:bg-[#E5B200] text-black shadow-md px-6 py-6 font-medium"
+              className="bg-primary hover:bg-primary/80 text-white shadow-md px-6 py-6 font-medium"
               size="lg"
             >
-              <MessageCircle className="mr-2 h-5 w-5" /> 🧠💬 Habla con tu mentor GenIA
+              <MessageCircle className="mr-2 h-5 w-5" /> 🧠💬 Habla con tu mentor
             </Button>
           </CardContent>
         </Card>

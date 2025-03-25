@@ -29,7 +29,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
       let yPosition = 20;
       
       // Añadir logo en la parte superior
-      const logoPath = '/lovable-uploads/845ba33d-1143-42dd-bd16-75d19bdbff27.png';
+      const logoPath = '/lovable-uploads/24f1bd87-3048-4b2c-bace-8ad51f9b5e9d.png';
       try {
         // Intentar añadir el logo como imagen
         pdf.addImage(logoPath, 'PNG', (pageWidth - 60) / 2, 10, 60, 15);
@@ -38,11 +38,11 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
         console.warn("No se pudo cargar el logo como imagen, usando texto:", error);
         // Fallback a texto
         pdf.setFontSize(24);
-        pdf.setTextColor(0, 0, 0);
-        pdf.text("GenIA", pageWidth / 2, 20, { align: "center" });
+        pdf.setTextColor(213, 43, 30); // #D52B1E
+        pdf.text("Coonic", pageWidth / 2, 20, { align: "center" });
         
         pdf.setFontSize(12);
-        pdf.text("Transform with Intelligence", pageWidth / 2, 30, { align: "center" });
+        pdf.text("Communication Designers", pageWidth / 2, 30, { align: "center" });
         yPosition = 40;
       }
       
@@ -213,8 +213,8 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
       for (let i = 1; i <= totalPages; i++) {
         pdf.setPage(i);
         pdf.setFontSize(8);
-        pdf.setTextColor(0, 0, 0);
-        pdf.text("Generado por GenIA • Transform with Intelligence", pageWidth / 2, 287, { align: "center" });
+        pdf.setTextColor(213, 43, 30);
+        pdf.text("Generado por Coonic • Communication Designers", pageWidth / 2, 287, { align: "center" });
       }
       
       // Guardar el PDF con un nombre único basado en la fecha
@@ -231,7 +231,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
   return (
     <Button 
       onClick={handleExport} 
-      className="bg-[#FFC400] hover:bg-[#E5B200] text-black shadow-md" 
+      className="bg-primary hover:bg-primary/80 text-white shadow-md" 
       size="lg"
       data-export-pdf="true"
     >
