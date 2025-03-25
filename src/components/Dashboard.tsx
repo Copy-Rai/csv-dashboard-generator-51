@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Eye, MousePointer, ArrowRightLeft, DollarSign, MessageCircle } from "lucide-react";
+import { Eye, MousePointer, ArrowRightLeft, DollarSign, MessageCircle, FileText } from "lucide-react";
 import MetricCard from './MetricCard';
 import ChartSection from './ChartSection';
 import InsightsSection from './InsightsSection';
@@ -142,27 +143,52 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       <InsightsSection data={data} />
       <MentorSection data={data} />
       
-      <Card className="border border-[#FFC400]/30 bg-[#FFC400]/5 shadow-md mt-12">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex-1">
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                🧠 <span>¿Tienes dudas con tu informe?</span>
-              </h3>
-              <p className="text-muted-foreground mt-2">
-                Habla con tu mentor GenIA y te ayudará a interpretar los resultados paso a paso.
-              </p>
+      {/* Final action blocks - Export and Mentor */}
+      <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Export PDF Card */}
+        <Card className="rounded-xl border border-gray-200 shadow-sm bg-white">
+          <CardContent className="p-8 flex flex-col items-center text-center">
+            <div className="w-16 h-16 rounded-full bg-[#FFC400]/20 flex items-center justify-center mb-5">
+              <FileText className="h-8 w-8 text-[#FFC400]" />
             </div>
+            <h3 className="text-2xl font-semibold mb-2">¿Quieres guardar este análisis?</h3>
+            <p className="text-muted-foreground mb-6 max-w-md">
+              Exporta el informe en formato PDF para revisarlo más tarde o compartirlo con tu equipo.
+            </p>
             <Button 
-              onClick={() => window.open(mentorUrl, '_blank')}
-              className="bg-[#FFC400] hover:bg-[#E5B200] text-black shadow-md px-5 py-6 mt-2 md:mt-0"
+              onClick={() => window.open("#exportar-pdf", "_self")}
+              className="bg-[#FFC400] hover:bg-[#E5B200] text-black shadow-md px-6 py-6 font-medium"
               size="lg"
             >
-              <MessageCircle className="mr-2 h-5 w-5" /> 🧠 Habla con tu mentor GenIA
+              <FileText className="mr-2 h-5 w-5" /> Exportar informe como PDF
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        
+        {/* Mentor Card */}
+        <Card className="rounded-xl border border-gray-200 shadow-sm bg-[#FFF9E6]">
+          <CardContent className="p-8 flex flex-col items-center text-center">
+            <div className="w-16 h-16 rounded-full bg-[#FFC400]/20 flex items-center justify-center mb-5">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 17.5C15.5899 17.5 18.5 14.5899 18.5 11C18.5 7.41015 15.5899 4.5 12 4.5C8.41015 4.5 5.5 7.41015 5.5 11C5.5 14.5899 8.41015 17.5 12 17.5Z" stroke="#FFC400" strokeWidth="1.5"/>
+                <path d="M7 13.5L7.5 12M17 13.5L16.5 12M11 7.5L9.5 9.5M13 7.5L14.5 9.5" stroke="#FFC400" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M8.5 17.5L7.5 21.5M15.5 17.5L16.5 21.5" stroke="#FFC400" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <h3 className="text-2xl font-semibold mb-2">¿Tienes dudas con tu informe?</h3>
+            <p className="text-muted-foreground mb-6 max-w-md">
+              Habla con tu mentor GenIA y te ayudará a interpretar los resultados paso a paso.
+            </p>
+            <Button 
+              onClick={() => window.open(mentorUrl, '_blank')}
+              className="bg-[#FFC400] hover:bg-[#E5B200] text-black shadow-md px-6 py-6 font-medium"
+              size="lg"
+            >
+              <MessageCircle className="mr-2 h-5 w-5" /> 🧠💬 Habla con tu mentor GenIA
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
       
       <div className="mt-6">
         <ExportButton data={data} />
