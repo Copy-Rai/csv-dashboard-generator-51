@@ -1,14 +1,14 @@
 
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { Brain, CheckCircle, AlertTriangle, Lightbulb, BookOpen } from "lucide-react";
+import { BookOpen, AlertTriangle, Lightbulb, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface MentorSectionProps {
   data: any[];
 }
 
-// Helper functions to determine if certain conditions are met
+// Helper functions to analyze data
 const hasManyImpressions = (data: any[]) => {
   const totalImpressions = data.reduce((sum, item) => {
     const impressions = typeof item.impressions === 'number' 
@@ -18,6 +18,13 @@ const hasManyImpressions = (data: any[]) => {
   }, 0);
   
   return totalImpressions > 10000; // Assuming 10k is "many" for this demo
+};
+
+const hasRevenueData = (data: any[]) => {
+  return data.some(item => 
+    (typeof item.revenue === 'number' && item.revenue > 0) || 
+    (typeof item.revenue === 'string' && parseFloat(item.revenue) > 0)
+  );
 };
 
 const calculatePlatformMetrics = (data: any[]) => {
@@ -106,6 +113,9 @@ const MentorSection: React.FC<MentorSectionProps> = ({ data }) => {
   const totalImpressions = platformMetrics.reduce((sum, p) => sum + p.impressions, 0);
   const totalClicks = platformMetrics.reduce((sum, p) => sum + p.clicks, 0);
   const totalConversions = platformMetrics.reduce((sum, p) => sum + p.conversions, 0);
+  const totalCost = platformMetrics.reduce((sum, p) => sum + p.cost, 0);
+  const totalRevenue = platformMetrics.reduce((sum, p) => sum + p.revenue, 0);
+  const overallCTR = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
   const averageROI = platformMetrics.length > 0
     ? platformMetrics.reduce((sum, p) => sum + p.roi, 0) / platformMetrics.length
     : 0;
@@ -115,7 +125,17 @@ const MentorSection: React.FC<MentorSectionProps> = ({ data }) => {
     return new Intl.NumberFormat('es-ES').format(Math.round(num));
   };
   
-  // Generate educational phrases (always shown)
+  // Format currency
+  const formatCurrency = (num: number) => {
+    return new Intl.NumberFormat('es-ES', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(num);
+  };
+  
+  // 1. EDUCATIONAL PHRASES (green)
   const educationalPhrases = [
     {
       type: 'educational',
@@ -126,22 +146,30 @@ const MentorSection: React.FC<MentorSectionProps> = ({ data }) => {
     {
       type: 'educational',
       icon: <BookOpen className="h-5 w-5" />,
-      title: "Entendiendo el ROI",
-      content: `El ROI indica la rentabilidad. Un ROI de ${Math.abs(averageROI).toFixed(2)}% significa ${averageROI > 0 
-        ? `que por cada euro invertido, has recuperado ${(1 + averageROI/100).toFixed(2)} euros` 
-        : 'que aún no has recuperado tu inversión'}.`
+      title: "Entendiendo el CTR",
+      content: `Un CTR ${overallCTR > 2 ? 'por encima del 2% es una buena señal' : 'del ' + overallCTR.toFixed(2) + '%'}: indica que la gente está haciendo clic en tus anuncios.`
     },
     {
       type: 'educational',
       icon: <BookOpen className="h-5 w-5" />,
-      title: "Tasa de conversión",
-      content: `La tasa de conversión te dice cuántos clics se transformaron en resultados. ${totalClicks > 0 
-        ? `Actualmente es del ${((totalConversions / totalClicks) * 100).toFixed(2)}%` 
-        : 'Aún no tienes suficientes datos para calcularla'}. A mayor conversión, más efectividad.`
+      title: "Entendiendo el ROI",
+      content: `El ROI indica la rentabilidad. Un ROI de ${Math.abs(averageROI).toFixed(2)}% significa ${averageROI > 0 
+        ? `que por cada euro invertido, has recuperado ${(1 + averageROI/100).toFixed(2)} euros` 
+        : 'que aún no has recuperado tu inversión'}.`
     }
   ];
   
-  // Generate alert phrases (conditional)
+  // Add revenue phrase if detected
+  if (hasRevenueData(data)) {
+    educationalPhrases.push({
+      type: 'educational',
+      icon: <BookOpen className="h-5 w-5" />,
+      title: "Ingresos generados",
+      content: `Los ingresos de ${formatCurrency(totalRevenue)} representan el dinero generado por tus campañas. Se calculan a partir del ROI y el coste total.`
+    });
+  }
+  
+  // 2. ALERT PHRASES (amber)
   const alertPhrases = [];
   
   // Check for platforms with high impressions but low conversions
@@ -182,11 +210,11 @@ const MentorSection: React.FC<MentorSectionProps> = ({ data }) => {
       type: 'alert',
       icon: <AlertTriangle className="h-5 w-5" />,
       title: "Revisión de inversión",
-      content: `Inviertes bastante en ${platformsWithLowROI[0].platform}, pero el ROI es bajo (${platformsWithLowROI[0].roi.toFixed(2)}%). ¿Has probado cambiar el enfoque creativo?`
+      content: `Inviertes bastante en ${platformsWithLowROI[0].platform}, pero el ROI es bajo (${platformsWithLowROI[0].roi.toFixed(2)}%). Considera redistribuir el presupuesto.`
     });
   }
   
-  // Generate recommendation phrases (conditional)
+  // 3. STRATEGIC RECOMMENDATION PHRASES (blue)
   const recommendationPhrases = [];
   
   // Best ROI platform
@@ -200,7 +228,7 @@ const MentorSection: React.FC<MentorSectionProps> = ({ data }) => {
         type: 'recommendation',
         icon: <Lightbulb className="h-5 w-5" />,
         title: "Optimización de inversión",
-        content: `${bestROIPlatform.platform} tiene el mejor ROI (${bestROIPlatform.roi.toFixed(2)}%). Considera aumentar la inversión en esta plataforma.`
+        content: `${bestROIPlatform.platform} es la más rentable: ROI de ${bestROIPlatform.roi.toFixed(2)}%. Valora aumentar la inversión.`
       });
     }
     
@@ -214,7 +242,7 @@ const MentorSection: React.FC<MentorSectionProps> = ({ data }) => {
         type: 'recommendation',
         icon: <Lightbulb className="h-5 w-5" />,
         title: "Enfoque en visibilidad",
-        content: `${bestCTRPlatform.platform} tiene el CTR más alto (${bestCTRPlatform.ctr.toFixed(2)}%). Ideal para aumentar visibilidad y clics.`
+        content: `${bestCTRPlatform.platform} tiene el CTR más alto (${bestCTRPlatform.ctr.toFixed(2)}%). Ideal para aumentar visibilidad.`
       });
     }
     
@@ -230,15 +258,29 @@ const MentorSection: React.FC<MentorSectionProps> = ({ data }) => {
         content: `${bestImpressionsPlatform.platform} destaca por volumen de impresiones (${formatNumber(bestImpressionsPlatform.impressions)}). Buena opción para campañas de notoriedad.`
       });
     }
+    
+    // Platform with high revenue and low cost
+    const efficientPlatforms = platformMetrics
+      .filter(p => p.revenue > 500 && p.cost > 0 && p.revenue / p.cost > 2)
+      .sort((a, b) => (b.revenue / b.cost) - (a.revenue / a.cost))[0];
+      
+    if (efficientPlatforms) {
+      recommendationPhrases.push({
+        type: 'recommendation',
+        icon: <Lightbulb className="h-5 w-5" />,
+        title: "Escalar resultados",
+        content: `Ingresas mucho en ${efficientPlatforms.platform} con bajo coste. Excelente opción para escalar resultados.`
+      });
+    }
   }
   
-  // Generate mentor phrases (always shown)
+  // 4. MENTORSHIP PHRASES (purple)
   const mentorPhrases = [
     {
       type: 'mentor',
       icon: <CheckCircle className="h-5 w-5" />,
       title: "Calidad vs Cantidad",
-      content: "Recuerda: no siempre se trata de llegar a más gente, sino de llegar a la adecuada."
+      content: "No siempre se trata de llegar a más gente, sino de llegar a la adecuada."
     },
     {
       type: 'mentor',
@@ -254,13 +296,31 @@ const MentorSection: React.FC<MentorSectionProps> = ({ data }) => {
     }
   ];
   
-  // Combine all phrases and limit to max 6
-  const allPhrases = [
-    ...educationalPhrases,
-    ...alertPhrases,
-    ...recommendationPhrases,
-    ...mentorPhrases
-  ].slice(0, 6);
+  // Combine all phrases and limit to max 6, prioritizing alerts and recommendations
+  // We want a mix of different types, so we'll select them in order of priority
+  const allPhrases = [];
+  
+  // Add at least one educational phrase
+  if (educationalPhrases.length > 0) {
+    allPhrases.push(educationalPhrases[0]);
+  }
+  
+  // Add alerts (high priority)
+  allPhrases.push(...alertPhrases);
+  
+  // Add recommendations (medium priority)
+  allPhrases.push(...recommendationPhrases);
+  
+  // Add one more educational phrase if available
+  if (educationalPhrases.length > 1) {
+    allPhrases.push(educationalPhrases[1]);
+  }
+  
+  // Add mentor phrases (always good to have)
+  allPhrases.push(...mentorPhrases);
+  
+  // Limit to 6 phrases
+  const displayedPhrases = allPhrases.slice(0, 6);
 
   return (
     <div className="my-8 animate-fade-in" style={{ animationDelay: '800ms' }}>
@@ -270,7 +330,7 @@ const MentorSection: React.FC<MentorSectionProps> = ({ data }) => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {allPhrases.map((phrase, index) => (
+        {displayedPhrases.map((phrase, index) => (
           <Card key={index} className={`card-glow border-l-4 ${
             phrase.type === 'educational' ? 'border-l-green-500' :
             phrase.type === 'alert' ? 'border-l-amber-500' :
