@@ -47,14 +47,34 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       return sum + revenue;
     }, 0);
     
-    const averageROI = totalCost > 0 
-      ? ((totalRevenue - totalCost) / totalCost) * 100 
+    // Calculate overall CTR
+    const overallCTR = totalImpressions > 0 
+      ? (totalClicks / totalImpressions) * 100 
       : 0;
+      
+    // Calculate average ROI (either from direct ROI values or from cost/revenue)
+    let averageROI;
+    
+    // First check if we have direct ROI values
+    const roiValues = data
+      .filter(item => typeof item.roi === 'number' || parseFloat(item.roi))
+      .map(item => typeof item.roi === 'number' ? item.roi : parseFloat(item.roi));
+      
+    if (roiValues.length > 0) {
+      // Calculate average of ROI values
+      averageROI = roiValues.reduce((sum, roi) => sum + roi, 0) / roiValues.length;
+    } else {
+      // Calculate ROI from cost and revenue
+      averageROI = totalCost > 0 
+        ? ((totalRevenue - totalCost) / totalCost) * 100 
+        : 0;
+    }
     
     return {
       totalImpressions,
       totalClicks,
       totalConversions,
+      overallCTR,
       averageROI,
       totalCost,
       totalRevenue
@@ -65,7 +85,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
 
   // Format numbers for display
   const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('es-ES').format(num);
+    return new Intl.NumberFormat('es-ES').format(Math.round(num));
   };
 
   // Format currency

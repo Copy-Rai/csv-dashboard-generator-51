@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Upload, FileText, AlertCircle, CheckCircle2 } from "lucide-react";
@@ -35,7 +36,40 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
   const processCSV = (text: string) => {
     try {
       const lines = text.split('\n');
-      const headers = lines[0].split(',').map(header => header.trim());
+      const headers = lines[0].split(',').map(header => header.trim().toLowerCase());
+      
+      // Map standard column names to possible variations
+      const columnMap = {
+        platform: ['platform', 'plataforma', 'red', 'red social', 'source', 'origen'],
+        impressions: ['impressions', 'impresiones', 'impr', 'impres', 'views', 'vistas'],
+        clicks: ['clicks', 'clics', 'cliques', 'click', 'clic'],
+        conversions: ['conversions', 'conversiones', 'conv', 'converts'],
+        cost: ['cost', 'costo', 'coste', 'gasto', 'spend'],
+        revenue: ['revenue', 'ingresos', 'revenue', 'income', 'ganancia'],
+        roi: ['roi', 'retorno', 'return'],
+        ctr: ['ctr', 'ratio de clics', 'click ratio']
+      };
+      
+      // Find index for each relevant column
+      const columnIndices: Record<string, number> = {};
+      
+      for (const [key, variations] of Object.entries(columnMap)) {
+        const index = headers.findIndex(header => 
+          variations.some(variation => header.includes(variation))
+        );
+        if (index !== -1) {
+          columnIndices[key] = index;
+        }
+      }
+      
+      // If essential columns are missing, show an error
+      const essentialColumns = ['platform', 'impressions', 'clicks'];
+      const missingColumns = essentialColumns.filter(col => columnIndices[col] === undefined);
+      
+      if (missingColumns.length > 0) {
+        toast.error(`Columnas faltantes: ${missingColumns.join(', ')}. Por favor revisa tu archivo CSV.`);
+        return null;
+      }
       
       const results = [];
       
@@ -45,11 +79,63 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
         const values = lines[i].split(',').map(value => value.trim());
         const entry: Record<string, string | number> = {};
         
-        for (let j = 0; j < headers.length; j++) {
-          // Try to convert numeric values
-          const value = values[j];
-          const numValue = parseFloat(value);
-          entry[headers[j]] = isNaN(numValue) ? value : numValue;
+        // Set each field based on the found indices
+        if (columnIndices.platform !== undefined)
+          entry.platform = values[columnIndices.platform];
+        
+        if (columnIndices.impressions !== undefined) {
+          const value = values[columnIndices.impressions];
+          entry.impressions = parseFloat(value) || 0;
+        } else {
+          entry.impressions = 0;
+        }
+        
+        if (columnIndices.clicks !== undefined) {
+          const value = values[columnIndices.clicks];
+          entry.clicks = parseFloat(value) || 0;
+        } else {
+          entry.clicks = 0;
+        }
+        
+        if (columnIndices.conversions !== undefined) {
+          const value = values[columnIndices.conversions];
+          entry.conversions = parseFloat(value) || 0;
+        } else {
+          entry.conversions = 0;
+        }
+        
+        if (columnIndices.cost !== undefined) {
+          const value = values[columnIndices.cost];
+          entry.cost = parseFloat(value) || 0;
+        } else {
+          entry.cost = 0;
+        }
+        
+        if (columnIndices.revenue !== undefined) {
+          const value = values[columnIndices.revenue];
+          entry.revenue = parseFloat(value) || 0;
+        } else {
+          entry.revenue = 0;
+        }
+        
+        if (columnIndices.roi !== undefined) {
+          const value = values[columnIndices.roi];
+          entry.roi = parseFloat(value) || 0;
+        } else if (entry.cost > 0) {
+          // Calculate ROI if not provided but we have cost and revenue
+          entry.roi = ((entry.revenue as number - entry.cost as number) / entry.cost as number) * 100;
+        } else {
+          entry.roi = 0;
+        }
+        
+        if (columnIndices.ctr !== undefined) {
+          const value = values[columnIndices.ctr];
+          entry.ctr = parseFloat(value) || 0;
+        } else if (entry.impressions > 0) {
+          // Calculate CTR if not provided but we have impressions and clicks
+          entry.ctr = ((entry.clicks as number) / (entry.impressions as number)) * 100;
+        } else {
+          entry.ctr = 0;
         }
         
         results.push(entry);
@@ -58,7 +144,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
       return results;
     } catch (error) {
       console.error("Error parsing CSV:", error);
-      toast.error("Error parsing CSV file. Please check the format.");
+      toast.error("Error al procesar el archivo CSV. Por favor revisa el formato.");
       return null;
     }
   };
@@ -83,7 +169,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
 
   const handleFile = (file: File) => {
     if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-      toast.error("Please upload a CSV file");
+      toast.error("Por favor sube un archivo CSV");
       return;
     }
     
@@ -99,22 +185,22 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
         
         if (data && data.length > 0) {
           setTimeout(() => {
-            toast.success("CSV file processed successfully!");
+            toast.success("¡Archivo CSV procesado correctamente!");
             onFileUploaded(data);
             setIsProcessing(false);
           }, 800); // Small delay for visual feedback
         } else {
-          throw new Error("Failed to process data or empty dataset");
+          throw new Error("Error al procesar los datos o conjunto de datos vacío");
         }
       } catch (error) {
-        console.error("Error reading file:", error);
-        toast.error("Error processing file. Please check the format.");
+        console.error("Error al leer el archivo:", error);
+        toast.error("Error al procesar el archivo. Por favor revisa el formato.");
         setIsProcessing(false);
       }
     };
     
     reader.onerror = () => {
-      toast.error("Error reading file");
+      toast.error("Error al leer el archivo");
       setIsProcessing(false);
     };
     

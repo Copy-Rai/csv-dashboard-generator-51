@@ -1,14 +1,13 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface ChartSectionProps {
   data: any[];
 }
 
 const ChartSection: React.FC<ChartSectionProps> = ({ data }) => {
-  // Process data for charts
+  // Process data for charts - group by platform
   const calculatePlatformMetrics = () => {
     const platformData: Record<string, {
       roi: number[];
@@ -17,6 +16,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data }) => {
       revenue: number;
       impressions: number;
       clicks: number;
+      conversions: number;
     }> = {};
     
     data.forEach(item => {
@@ -25,6 +25,23 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data }) => {
       const revenue = typeof item.revenue === 'number' ? item.revenue : parseFloat(item.revenue) || 0;
       const impressions = typeof item.impressions === 'number' ? item.impressions : parseFloat(item.impressions) || 0;
       const clicks = typeof item.clicks === 'number' ? item.clicks : parseFloat(item.clicks) || 0;
+      const conversions = typeof item.conversions === 'number' ? item.conversions : parseFloat(item.conversions) || 0;
+      
+      // Get ROI value (either directly or calculate it)
+      let roi = 0;
+      if (typeof item.roi === 'number' || parseFloat(item.roi)) {
+        roi = typeof item.roi === 'number' ? item.roi : parseFloat(item.roi);
+      } else if (cost > 0) {
+        roi = ((revenue - cost) / cost) * 100;
+      }
+      
+      // Get CTR value (either directly or calculate it)
+      let ctr = 0;
+      if (typeof item.ctr === 'number' || parseFloat(item.ctr)) {
+        ctr = typeof item.ctr === 'number' ? item.ctr : parseFloat(item.ctr);
+      } else if (impressions > 0) {
+        ctr = (clicks / impressions) * 100;
+      }
       
       if (!platformData[platform]) {
         platformData[platform] = {
@@ -33,23 +50,18 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data }) => {
           cost: 0,
           revenue: 0,
           impressions: 0,
-          clicks: 0
+          clicks: 0,
+          conversions: 0
         };
       }
       
-      // Calculate ROI for this item
-      const roi = cost > 0 ? ((revenue - cost) / cost) * 100 : 0;
       platformData[platform].roi.push(roi);
-      
-      // Calculate CTR for this item
-      const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
       platformData[platform].ctr.push(ctr);
-      
-      // Accumulate costs, revenue, impressions, and clicks
       platformData[platform].cost += cost;
       platformData[platform].revenue += revenue;
       platformData[platform].impressions += impressions;
       platformData[platform].clicks += clicks;
+      platformData[platform].conversions += conversions;
     });
     
     return Object.entries(platformData).map(([platform, metrics]) => ({
@@ -62,10 +74,16 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data }) => {
       ctr: metrics.ctr.length > 0 
         ? metrics.ctr.reduce((sum, val) => sum + val, 0) / metrics.ctr.length 
         : 0,
+      // Other accumulated metrics
       cost: metrics.cost,
       revenue: metrics.revenue,
       impressions: metrics.impressions,
-      clicks: metrics.clicks
+      clicks: metrics.clicks,
+      conversions: metrics.conversions,
+      // Also calculate conversion rate per platform
+      convRate: metrics.clicks > 0 
+        ? (metrics.conversions / metrics.clicks) * 100 
+        : 0
     }));
   };
 
@@ -73,7 +91,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data }) => {
   
   // Format numbers for display
   const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('es-ES', {
       maximumFractionDigits: 2,
     }).format(num);
   };
@@ -85,9 +103,9 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data }) => {
 
   // Format currency
   const formatCurrency = (num: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('es-ES', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'EUR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(num);

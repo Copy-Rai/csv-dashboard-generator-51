@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Lightbulb, AlertTriangle, TrendingUp, ChartBar, Target } from "lucide-react";
 
 interface InsightsSectionProps {
@@ -18,6 +18,7 @@ const InsightsSection: React.FC<InsightsSectionProps> = ({ data }) => {
       revenue: number;
       impressions: number;
       clicks: number;
+      conversions: number;
     }> = {};
     
     data.forEach(item => {
@@ -26,6 +27,7 @@ const InsightsSection: React.FC<InsightsSectionProps> = ({ data }) => {
       const revenue = typeof item.revenue === 'number' ? item.revenue : parseFloat(item.revenue) || 0;
       const impressions = typeof item.impressions === 'number' ? item.impressions : parseFloat(item.impressions) || 0;
       const clicks = typeof item.clicks === 'number' ? item.clicks : parseFloat(item.clicks) || 0;
+      const conversions = typeof item.conversions === 'number' ? item.conversions : parseFloat(item.conversions) || 0;
       
       if (!platformData[platform]) {
         platformData[platform] = {
@@ -34,23 +36,35 @@ const InsightsSection: React.FC<InsightsSectionProps> = ({ data }) => {
           cost: 0,
           revenue: 0,
           impressions: 0,
-          clicks: 0
+          clicks: 0,
+          conversions: 0
         };
       }
       
-      // Calculate ROI for this item
-      const roi = cost > 0 ? ((revenue - cost) / cost) * 100 : 0;
+      // Get or calculate ROI
+      let roi = 0;
+      if (typeof item.roi === 'number' || parseFloat(item.roi)) {
+        roi = typeof item.roi === 'number' ? item.roi : parseFloat(item.roi);
+      } else if (cost > 0) {
+        roi = ((revenue - cost) / cost) * 100;
+      }
       platformData[platform].roi.push(roi);
       
-      // Calculate CTR for this item
-      const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
+      // Get or calculate CTR
+      let ctr = 0;
+      if (typeof item.ctr === 'number' || parseFloat(item.ctr)) {
+        ctr = typeof item.ctr === 'number' ? item.ctr : parseFloat(item.ctr);
+      } else if (impressions > 0) {
+        ctr = (clicks / impressions) * 100;
+      }
       platformData[platform].ctr.push(ctr);
       
-      // Accumulate costs, revenue, impressions, and clicks
+      // Accumulate other metrics
       platformData[platform].cost += cost;
       platformData[platform].revenue += revenue;
       platformData[platform].impressions += impressions;
       platformData[platform].clicks += clicks;
+      platformData[platform].conversions += conversions;
     });
     
     // Calculate average metrics by platform
@@ -67,15 +81,31 @@ const InsightsSection: React.FC<InsightsSectionProps> = ({ data }) => {
       cost: metrics.cost,
       revenue: metrics.revenue,
       impressions: metrics.impressions,
-      clicks: metrics.clicks
+      clicks: metrics.clicks,
+      conversions: metrics.conversions,
+      // Also calculate conversion rate
+      convRate: metrics.clicks > 0 ? (metrics.conversions / metrics.clicks) * 100 : 0
     }));
+    
+    // Calculate platform averages for comparison
+    const avgCTR = platformMetrics.length > 0
+      ? platformMetrics.reduce((sum, p) => sum + p.ctr, 0) / platformMetrics.length
+      : 0;
+      
+    const avgROI = platformMetrics.length > 0
+      ? platformMetrics.reduce((sum, p) => sum + p.roi, 0) / platformMetrics.length
+      : 0;
+      
+    const avgConvRate = platformMetrics.length > 0
+      ? platformMetrics.reduce((sum, p) => sum + p.convRate, 0) / platformMetrics.length
+      : 0;
     
     // Generate insights based on the metrics
     const insights = [];
     
     // Find platform with highest ROI
     const highestRoiPlatform = [...platformMetrics].sort((a, b) => b.roi - a.roi)[0];
-    if (highestRoiPlatform) {
+    if (highestRoiPlatform && highestRoiPlatform.roi > 0) {
       insights.push({
         type: 'positive',
         title: 'Mejor ROI',
@@ -84,30 +114,32 @@ const InsightsSection: React.FC<InsightsSectionProps> = ({ data }) => {
       });
     }
     
-    // Find platform with lowest CTR
-    const lowestCtrPlatform = [...platformMetrics]
+    // Find platforms with CTR below average
+    const lowCtrPlatforms = platformMetrics
       .filter(p => p.impressions > 100) // Ensure enough data
-      .sort((a, b) => a.ctr - b.ctr)[0];
+      .filter(p => p.ctr < avgCTR * 0.8) // Less than 80% of average
+      .sort((a, b) => a.ctr - b.ctr);
     
-    if (lowestCtrPlatform) {
+    if (lowCtrPlatforms.length > 0) {
       insights.push({
         type: 'warning',
         title: 'Bajo CTR',
-        description: `El CTR en ${lowestCtrPlatform.platform} es bajo (${lowestCtrPlatform.ctr.toFixed(2)}%). Considera revisar la creatividad o el llamado a la acción.`,
+        description: `${lowCtrPlatforms[0].platform} tiene un CTR por debajo de la media (${lowCtrPlatforms[0].ctr.toFixed(2)}% vs ${avgCTR.toFixed(2)}%). Considera revisar la creatividad o el llamado a la acción.`,
         icon: <AlertTriangle className="h-5 w-5" />
       });
     }
     
-    // Find platform with highest cost but low ROI
+    // Find platform with high impressions but low conversions
     const inefficientPlatforms = platformMetrics
-      .filter(p => p.cost > 0)
-      .filter(p => p.roi < (highestRoiPlatform?.roi / 2) && p.cost > (highestRoiPlatform?.cost / 2));
+      .filter(p => p.impressions > avgCTR * 1.5) // More than 150% of average impressions
+      .filter(p => p.convRate < avgConvRate * 0.8) // Less than 80% of average conversion rate
+      .sort((a, b) => b.impressions - a.impressions);
     
     if (inefficientPlatforms.length > 0) {
       insights.push({
         type: 'warning',
-        title: 'Eficiencia de inversión',
-        description: `${inefficientPlatforms[0].platform} tiene un alto costo pero bajo ROI. Considera optimizar o redistribuir el presupuesto.`,
+        title: 'Impresiones sin conversiones',
+        description: `${inefficientPlatforms[0].platform} ha generado muchas impresiones pero pocas conversiones. Revisa la calidad del tráfico y la experiencia post-clic.`,
         icon: <ChartBar className="h-5 w-5" />
       });
     }
@@ -127,19 +159,28 @@ const InsightsSection: React.FC<InsightsSectionProps> = ({ data }) => {
       }
     }
     
-    // Add general insight about conversion optimization
+    // Add general insight about overall performance
     const totalImpressions = platformMetrics.reduce((sum, p) => sum + p.impressions, 0);
     const totalClicks = platformMetrics.reduce((sum, p) => sum + p.clicks, 0);
-    const totalConversions = platformMetrics.reduce((sum, p) => sum + (p.revenue > 0 ? 1 : 0), 0);
+    const totalConversions = platformMetrics.reduce((sum, p) => sum + p.conversions, 0);
     
     if (totalImpressions > 0 && totalClicks > 0) {
       const overallCtr = (totalClicks / totalImpressions) * 100;
       const overallConversionRate = totalClicks > 0 ? (totalConversions / totalClicks) * 100 : 0;
       
+      let performanceText = "";
+      if (overallCtr < 1) {
+        performanceText = "La tasa general de clics está por debajo del promedio recomendado. Considera mejorar la relevancia de tus anuncios.";
+      } else if (overallConversionRate < 1) {
+        performanceText = "La tasa de conversión es baja. Revisa la experiencia post-clic y las páginas de destino.";
+      } else {
+        performanceText = "Estos números están dentro del promedio de la industria.";
+      }
+      
       insights.push({
         type: 'insight',
         title: 'Visión general',
-        description: `La tasa general de clics es ${overallCtr.toFixed(2)}% y la tasa de conversión es ${overallConversionRate.toFixed(2)}%. ${overallCtr < 2 ? 'Considera mejorar la relevancia de tus anuncios.' : 'Estos números están dentro del promedio de la industria.'}`,
+        description: `La tasa general de clics es ${overallCtr.toFixed(2)}% y la tasa de conversión es ${overallConversionRate.toFixed(2)}%. ${performanceText}`,
         icon: <Lightbulb className="h-5 w-5" />
       });
     }
