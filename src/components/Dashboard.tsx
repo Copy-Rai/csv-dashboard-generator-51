@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Eye, MousePointer, ArrowRightLeft, DollarSign, MessageCircle, FileText } from "lucide-react";
 import MetricCard from './MetricCard';
@@ -125,7 +126,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
     <div className="space-y-8 w-full max-w-7xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <img 
-          src="/lovable-uploads/1be870f7-11db-4f87-979c-e2d428cbe6c0.png" 
+          src="/lovable-uploads/9ed53e46-56f7-4930-b0b6-abdadb20b640.png" 
           alt="Coonic Logo" 
           className="h-12" 
         />

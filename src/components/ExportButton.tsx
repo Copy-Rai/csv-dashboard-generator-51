@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { FileText } from 'lucide-react';
@@ -28,7 +29,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
       let yPosition = 20;
       
       // Añadir logo en la parte superior
-      const logoPath = '/lovable-uploads/1be870f7-11db-4f87-979c-e2d428cbe6c0.png';
+      const logoPath = '/lovable-uploads/9ed53e46-56f7-4930-b0b6-abdadb20b640.png';
       try {
         // Intentar añadir el logo como imagen
         pdf.addImage(logoPath, 'PNG', (pageWidth - 60) / 2, 10, 60, 15);

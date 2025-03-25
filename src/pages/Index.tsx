@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import FileUpload from '@/components/FileUpload';
 import Dashboard from '@/components/Dashboard';
@@ -23,7 +24,7 @@ const Index = () => {
         <div className="flex flex-col items-center mb-8">
           <div className="w-full flex items-center justify-center md:justify-start mb-6">
             <img 
-              src="/lovable-uploads/1be870f7-11db-4f87-979c-e2d428cbe6c0.png" 
+              src="/lovable-uploads/9ed53e46-56f7-4930-b0b6-abdadb20b640.png" 
               alt="Coonic Logo" 
               className="h-16 md:h-20 animate-fade-in" 
             />
@@ -137,16 +138,11 @@ const Index = () => {
         )}
       </main>
       
-      {/* Footer with Coonic branding */}
+      {/* Footer with Coonic branding - Eliminado el logo duplicado */}
       {!data && (
         <footer className="w-full py-4 text-center border-t border-gray-200 mt-10">
           <div className="max-w-7xl mx-auto px-4">
             <div className="flex items-center justify-center">
-              <img 
-                src="/lovable-uploads/1be870f7-11db-4f87-979c-e2d428cbe6c0.png" 
-                alt="Coonic Logo" 
-                className="h-8 mr-2" 
-              />
               <span className="text-sm text-muted-foreground">
                 © 2023 Coonic Communication Designers. Todos los derechos reservados.
               </span>
