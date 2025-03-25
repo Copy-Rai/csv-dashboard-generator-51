@@ -227,7 +227,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
     <div className="fixed bottom-4 right-4 z-10">
       <Button 
         onClick={handleExport} 
-        className="shadow-lg"
+        className="bg-[#FFC400] hover:bg-[#E5B200] text-black shadow-md" 
         size="lg"
       >
         <FileText className="mr-2 h-4 w-4" /> Exportar informe como PDF
