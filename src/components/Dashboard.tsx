@@ -1,11 +1,12 @@
 
 import React from 'react';
-import { Eye, MousePointer, ArrowRightLeft, DollarSign } from "lucide-react";
+import { Eye, MousePointer, ArrowRightLeft, DollarSign, MessageCircle } from "lucide-react";
 import MetricCard from './MetricCard';
 import ChartSection from './ChartSection';
 import InsightsSection from './InsightsSection';
 import MentorSection from './MentorSection';
 import ExportButton from './ExportButton';
+import { Button } from './ui/button';
 
 interface DashboardProps {
   data: any[];
@@ -138,6 +139,20 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       <ChartSection data={data} />
       <InsightsSection data={data} />
       <MentorSection data={data} />
+      
+      <div className="mt-16 mb-20 text-center">
+        <p className="text-muted-foreground mb-4">
+          ¿Tienes dudas sobre tu informe? Sube tu PDF o CSV y habla con tu mentor GenIA. Te lo explicará paso a paso.
+        </p>
+        <Button 
+          onClick={() => window.open('https://chatgpt.com/g/g-67e26ff502f881919b802f3ff8a77605-mentor-de-campanas-genia', '_blank')}
+          className="bg-[#6E59A5] hover:bg-[#5D4A8F] shadow-lg mb-8 py-6"
+          size="lg"
+        >
+          <MessageCircle className="mr-2 h-5 w-5" /> 🧠 Habla con tu mentor GenIA
+        </Button>
+      </div>
+      
       <ExportButton data={data} />
     </div>
   );
