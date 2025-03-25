@@ -105,14 +105,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
 
   return (
     <div className="space-y-8 w-full max-w-7xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <img 
-          src="/lovable-uploads/845ba33d-1143-42dd-bd16-75d19bdbff27.png" 
-          alt="GenIA Logo" 
-          className="h-12 md:h-16" 
-        />
-      </div>
-
       <div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard 
