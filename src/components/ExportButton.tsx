@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, FilePdf } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { toast } from 'sonner';
@@ -25,10 +25,18 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
       const pageWidth = pdf.internal.pageSize.getWidth();
       let yPosition = 20;
       
-      // Añadir logo en la parte superior (texto como sustituto si no hay logo)
-      pdf.setFontSize(12);
-      pdf.setTextColor(155, 135, 245); // Color primario morado
-      pdf.text("GenIA", pageWidth - 20, 10, { align: "right" });
+      // Añadir logo en la parte superior
+      const logoPath = '/lovable-uploads/77bfd0ba-9158-44ca-93ad-aec52b09cd64.png';
+      try {
+        // Intentar añadir el logo como imagen
+        pdf.addImage(logoPath, 'PNG', pageWidth - 60, 5, 40, 10);
+      } catch (error) {
+        console.warn("No se pudo cargar el logo como imagen, usando texto:", error);
+        // Fallback a texto
+        pdf.setFontSize(12);
+        pdf.setTextColor(155, 135, 245); // Color primario morado
+        pdf.text("GenIA", pageWidth - 20, 10, { align: "right" });
+      }
       
       // Título y fecha
       pdf.setFontSize(20);
@@ -197,7 +205,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
         pdf.setPage(i);
         pdf.setFontSize(8);
         pdf.setTextColor(155, 135, 245); // Color primario morado
-        pdf.text("Generado por GenIA", pageWidth / 2, 287, { align: "center" });
+        pdf.text("Generado por GenIA • Transform with Intelligence", pageWidth / 2, 287, { align: "center" });
       }
       
       // Guardar el PDF
@@ -216,7 +224,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
         className="shadow-lg"
         size="lg"
       >
-        <FilePdf className="mr-2 h-4 w-4" /> Exportar informe como PDF
+        <FileText className="mr-2 h-4 w-4" /> Exportar informe como PDF
       </Button>
     </div>
   );
