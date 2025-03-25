@@ -26,19 +26,25 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
       let yPosition = 20;
       
       // Añadir logo en la parte superior
-      const logoPath = '/lovable-uploads/77bfd0ba-9158-44ca-93ad-aec52b09cd64.png';
+      const logoPath = '/lovable-uploads/845ba33d-1143-42dd-bd16-75d19bdbff27.png';
       try {
         // Intentar añadir el logo como imagen
-        pdf.addImage(logoPath, 'PNG', pageWidth - 60, 5, 40, 10);
+        pdf.addImage(logoPath, 'PNG', (pageWidth - 60) / 2, 10, 60, 15);
+        yPosition = 35;
       } catch (error) {
         console.warn("No se pudo cargar el logo como imagen, usando texto:", error);
         // Fallback a texto
+        pdf.setFontSize(24);
+        pdf.setTextColor(0, 0, 0);
+        pdf.text("GenIA", pageWidth / 2, 20, { align: "center" });
+        
         pdf.setFontSize(12);
-        pdf.setTextColor(155, 135, 245); // Color primario morado
-        pdf.text("GenIA", pageWidth - 20, 10, { align: "right" });
+        pdf.text("Transform with Intelligence", pageWidth / 2, 30, { align: "center" });
+        yPosition = 40;
       }
       
       // Título y fecha
+      yPosition += 10;
       pdf.setFontSize(20);
       pdf.setTextColor(33, 33, 33);
       pdf.text("Informe de Campañas de Marketing", pageWidth / 2, yPosition, { align: "center" });
@@ -204,7 +210,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
       for (let i = 1; i <= totalPages; i++) {
         pdf.setPage(i);
         pdf.setFontSize(8);
-        pdf.setTextColor(155, 135, 245); // Color primario morado
+        pdf.setTextColor(0, 0, 0);
         pdf.text("Generado por GenIA • Transform with Intelligence", pageWidth / 2, 287, { align: "center" });
       }
       

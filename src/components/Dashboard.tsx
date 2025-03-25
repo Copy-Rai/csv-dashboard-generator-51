@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Eye, MousePointer, ArrowRightLeft, DollarSign, MessageCircle } from "lucide-react";
 import MetricCard from './MetricCard';
@@ -7,6 +6,7 @@ import InsightsSection from './InsightsSection';
 import MentorSection from './MentorSection';
 import ExportButton from './ExportButton';
 import { Button } from './ui/button';
+import { Card, CardContent } from './ui/card';
 
 interface DashboardProps {
   data: any[];
@@ -101,8 +101,18 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
     }).format(num);
   };
 
+  const mentorUrl = 'https://chatgpt.com/g/g-67e26ff502f881919b802f3ff8a77605-mentor-de-campanas-genia';
+
   return (
     <div className="space-y-8 w-full max-w-7xl mx-auto px-4 py-8">
+      <div className="flex items-center justify-between mb-8">
+        <img 
+          src="/lovable-uploads/845ba33d-1143-42dd-bd16-75d19bdbff27.png" 
+          alt="GenIA Logo" 
+          className="h-12 md:h-16" 
+        />
+      </div>
+
       <div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard 
@@ -136,6 +146,28 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
         </div>
       </div>
 
+      <Card className="border border-[#FFC400]/30 bg-[#FFC400]/5 shadow-md">
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex-1">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                🧠 <span>¿Quieres ayuda para interpretar tu informe?</span>
+              </h3>
+              <p className="text-muted-foreground mt-2">
+                Tu mentor GenIA puede analizar los resultados contigo y sugerirte mejoras.
+              </p>
+            </div>
+            <Button 
+              onClick={() => window.open(mentorUrl, '_blank')}
+              className="bg-[#FFC400] hover:bg-[#E5B200] text-black shadow-md px-5 py-6 mt-2 md:mt-0"
+              size="lg"
+            >
+              <MessageCircle className="mr-2 h-5 w-5" /> 🧠 Habla con tu mentor GenIA
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <ChartSection data={data} />
       <InsightsSection data={data} />
       <MentorSection data={data} />
@@ -145,8 +177,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
           ¿Tienes dudas sobre tu informe? Sube tu PDF o CSV y habla con tu mentor GenIA. Te lo explicará paso a paso.
         </p>
         <Button 
-          onClick={() => window.open('https://chatgpt.com/g/g-67e26ff502f881919b802f3ff8a77605-mentor-de-campanas-genia', '_blank')}
-          className="bg-[#6E59A5] hover:bg-[#5D4A8F] shadow-lg mb-8 py-6"
+          onClick={() => window.open(mentorUrl, '_blank')}
+          className="bg-[#FFC400] hover:bg-[#E5B200] text-black shadow-md px-6 py-6"
           size="lg"
         >
           <MessageCircle className="mr-2 h-5 w-5" /> 🧠 Habla con tu mentor GenIA
