@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Eye, MousePointer, ArrowRightLeft, DollarSign, MessageCircle, FileText } from "lucide-react";
 import MetricCard from './MetricCard';
@@ -126,7 +125,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
     <div className="space-y-8 w-full max-w-7xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <img 
-          src="/lovable-uploads/8f861b62-bd03-49fd-bdc2-22094cce3d3a.png" 
+          src="/lovable-uploads/1be870f7-11db-4f87-979c-e2d428cbe6c0.png" 
           alt="Coonic Logo" 
           className="h-12" 
         />
@@ -151,7 +150,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
           />
           <MetricCard 
             title="Conversiones totales" 
-            value={formatNumber(metrics.totalConversiones)}
+            value={formatNumber(metrics.totalConversions)}
             icon={<ArrowRightLeft className="h-5 w-5" />}
             description="Total de conversiones generadas"
             delay={200}
