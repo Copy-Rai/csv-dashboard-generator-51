@@ -5,7 +5,8 @@ import Dashboard from '@/components/Dashboard';
 import { Toaster } from "@/components/ui/sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, HelpCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const Index = () => {
   const [data, setData] = useState<any[] | null>(null);
@@ -46,6 +47,27 @@ const Index = () => {
       <main className="w-full max-w-7xl mx-auto px-4 pb-16">
         {!data ? (
           <>
+            {/* File Upload Section - Now positioned first */}
+            <FileUpload onFileUploaded={handleFileUploaded} />
+            
+            {/* Tooltip for CSV requirements */}
+            <div className="max-w-2xl mx-auto -mt-2 mb-10 text-center">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground cursor-help">
+                      <HelpCircle className="h-4 w-4 mr-1" />
+                      ¿Qué información debe contener mi CSV?
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Acepta archivos CSV con métricas de campañas: impresiones, clics, conversiones, coste, ingresos...</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            
+            {/* Mentor Card - Moved after file upload */}
             <Card className="border border-[#FFC400]/30 bg-[#FFC400]/5 shadow-md max-w-3xl mx-auto mb-10">
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -67,8 +89,6 @@ const Index = () => {
                 </div>
               </CardContent>
             </Card>
-            
-            <FileUpload onFileUploaded={handleFileUploaded} />
           </>
         ) : (
           <Dashboard data={data} />
