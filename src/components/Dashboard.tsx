@@ -4,6 +4,7 @@ import { Eye, MousePointer, ArrowRightLeft, DollarSign } from "lucide-react";
 import MetricCard from './MetricCard';
 import ChartSection from './ChartSection';
 import InsightsSection from './InsightsSection';
+import MentorSection from './MentorSection';
 
 interface DashboardProps {
   data: any[];
@@ -135,6 +136,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
 
       <ChartSection data={data} />
       <InsightsSection data={data} />
+      <MentorSection data={data} />
     </div>
   );
 };
