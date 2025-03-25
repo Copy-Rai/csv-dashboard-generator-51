@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, FilePdf } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { toast } from 'sonner';
@@ -24,6 +24,11 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       let yPosition = 20;
+      
+      // Añadir logo en la parte superior (texto como sustituto si no hay logo)
+      pdf.setFontSize(12);
+      pdf.setTextColor(155, 135, 245); // Color primario morado
+      pdf.text("GenIA", pageWidth - 20, 10, { align: "right" });
       
       // Título y fecha
       pdf.setFontSize(20);
@@ -137,7 +142,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
       }
       
       pdf.setFontSize(16);
-      pdf.text("Insights del mentor de campaña 🧠", 14, yPosition);
+      pdf.text("Tu mentor de campaña dice 🧠", 14, yPosition);
       yPosition += 10;
       
       const mentorSection = document.querySelector(".mentor-section");
@@ -146,7 +151,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
           const insightCards = mentorSection.querySelectorAll(".insight-card");
           
           if (insightCards.length > 0) {
-            for (let i = 0; i < insightCards.length && i < 6; i++) {
+            for (let i = 0; i < insightCards.length; i++) {
               try {
                 // Nueva página si no hay suficiente espacio
                 if (yPosition > 240) {
@@ -186,9 +191,18 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
         pdf.text("No hay insights disponibles para mostrar.", 20, yPosition);
       }
       
+      // Añadir logo en pie de página
+      const totalPages = pdf.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(8);
+        pdf.setTextColor(155, 135, 245); // Color primario morado
+        pdf.text("Generado por GenIA", pageWidth / 2, 287, { align: "center" });
+      }
+      
       // Guardar el PDF
       pdf.save(`informe_marketing_${formatDate().replace(/\//g, '-')}.pdf`);
-      toast.success("Informe exportado con éxito");
+      toast.success("Informe exportado con éxito. Descargando el archivo...");
     } catch (error) {
       console.error("Error al generar el PDF:", error);
       toast.error("Error al generar el informe. Inténtalo de nuevo.");
@@ -202,11 +216,10 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
         className="shadow-lg"
         size="lg"
       >
-        <Download className="mr-2 h-4 w-4" /> Exportar informe
+        <FilePdf className="mr-2 h-4 w-4" /> Exportar informe como PDF
       </Button>
     </div>
   );
 };
 
 export default ExportButton;
-
