@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { FileText } from 'lucide-react';
@@ -224,11 +223,12 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-10">
+    <div>
       <Button 
         onClick={handleExport} 
         className="bg-[#FFC400] hover:bg-[#E5B200] text-black shadow-md" 
         size="lg"
+        data-export-pdf="true"
       >
         <FileText className="mr-2 h-4 w-4" /> Exportar informe como PDF
       </Button>

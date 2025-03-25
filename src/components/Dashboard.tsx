@@ -103,6 +103,14 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
   };
 
   const mentorUrl = 'https://chatgpt.com/g/g-67e26ff502f881919b802f3ff8a77605-mentor-de-campanas-genia';
+  
+  // Function to handle PDF export directly
+  const handleExportPDF = () => {
+    const exportButtonElement = document.querySelector('button[data-export-pdf="true"]');
+    if (exportButtonElement instanceof HTMLButtonElement) {
+      exportButtonElement.click();
+    }
+  };
 
   return (
     <div className="space-y-8 w-full max-w-7xl mx-auto px-4 py-8">
@@ -156,7 +164,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
               Exporta el informe en formato PDF para revisarlo más tarde o compartirlo con tu equipo.
             </p>
             <Button 
-              onClick={() => window.open("#exportar-pdf", "_self")}
+              onClick={handleExportPDF}
               className="bg-[#FFC400] hover:bg-[#E5B200] text-black shadow-md px-6 py-6 font-medium"
               size="lg"
             >
@@ -190,7 +198,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
         </Card>
       </div>
       
-      <div className="mt-6">
+      {/* Hidden ExportButton component that will be triggered by the visible button */}
+      <div className="hidden">
         <ExportButton data={data} />
       </div>
     </div>
