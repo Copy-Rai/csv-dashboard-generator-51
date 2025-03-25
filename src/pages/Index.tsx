@@ -47,7 +47,7 @@ const Index = () => {
       <main className="w-full max-w-7xl mx-auto px-4 pb-16">
         {!data ? (
           <>
-            {/* File Upload Section - Positioned first as the main CTA */}
+            {/* File Upload Section */}
             <FileUpload onFileUploaded={handleFileUploaded} />
             
             {/* Tooltip for CSV requirements */}
@@ -67,36 +67,71 @@ const Index = () => {
               </TooltipProvider>
             </div>
             
-            {/* "How to prepare your data" section */}
-            <div className="p-8 rounded-xl bg-white/50 backdrop-blur-sm border border-border mb-10 max-w-4xl mx-auto">
-              <h2 className="text-xl font-medium mb-4">¿Cómo preparar tus datos?</h2>
-              <p className="text-muted-foreground mb-6">
+            {/* "How to prepare your data" section - Redesigned */}
+            <div className="w-full max-w-6xl mx-auto mb-12">
+              <h2 className="text-2xl font-bold mb-6">¿Cómo preparar tus datos?</h2>
+              
+              <p className="text-lg mb-8">
                 Tu archivo CSV debe contener las siguientes columnas:
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="p-4 rounded-lg bg-secondary/50 border border-border">
-                  <h3 className="font-medium mb-2">Identificadores</h3>
-                  <ul className="text-sm text-muted-foreground text-left list-disc pl-5">
-                    <li>platform (Facebook, Instagram, Google, etc.)</li>
-                    <li>campaign_name (opcional)</li>
-                    <li>date (opcional)</li>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                  <h3 className="text-xl font-semibold mb-4">Identificadores</h3>
+                  <ul className="space-y-2">
+                    <li className="flex items-start">
+                      <span className="text-[#FFC400] mr-2">•</span>
+                      <span><strong>platform</strong> (Facebook, Instagram, Google, etc.)</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-[#FFC400] mr-2">•</span>
+                      <span><strong>campaign_name</strong> (opcional)</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-[#FFC400] mr-2">•</span>
+                      <span><strong>date</strong> (opcional)</span>
+                    </li>
                   </ul>
                 </div>
-                <div className="p-4 rounded-lg bg-secondary/50 border border-border">
-                  <h3 className="font-medium mb-2">Métricas de desempeño</h3>
-                  <ul className="text-sm text-muted-foreground text-left list-disc pl-5">
-                    <li>impressions</li>
-                    <li>clicks</li>
-                    <li>conversions</li>
+                
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                  <h3 className="text-xl font-semibold mb-4">Métricas de desempeño</h3>
+                  <ul className="space-y-2">
+                    <li className="flex items-start">
+                      <span className="text-[#FFC400] mr-2">•</span>
+                      <span><strong>impressions</strong></span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-[#FFC400] mr-2">•</span>
+                      <span><strong>clicks</strong></span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-[#FFC400] mr-2">•</span>
+                      <span><strong>conversions</strong></span>
+                    </li>
                   </ul>
                 </div>
-                <div className="p-4 rounded-lg bg-secondary/50 border border-border">
-                  <h3 className="font-medium mb-2">Métricas financieras</h3>
-                  <ul className="text-sm text-muted-foreground text-left list-disc pl-5">
-                    <li>cost</li>
-                    <li>revenue</li>
+                
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                  <h3 className="text-xl font-semibold mb-4">Métricas financieras</h3>
+                  <ul className="space-y-2">
+                    <li className="flex items-start">
+                      <span className="text-[#FFC400] mr-2">•</span>
+                      <span><strong>cost</strong></span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-[#FFC400] mr-2">•</span>
+                      <span><strong>revenue</strong></span>
+                    </li>
                   </ul>
                 </div>
+              </div>
+              
+              <div className="bg-[#FFF9E6] p-6 rounded-lg border border-[#FFC400]/30 mb-10">
+                <p className="flex items-start">
+                  <strong className="font-semibold mr-2">Consejo:</strong>
+                  <span>Puedes exportar estos datos directamente desde las plataformas de publicidad como Google Ads, Facebook Ads, etc. o combinarlos en una hoja de cálculo.</span>
+                </p>
               </div>
             </div>
             
@@ -147,6 +182,24 @@ const Index = () => {
           <Dashboard data={data} />
         )}
       </main>
+      
+      {/* Footer with GenIA branding */}
+      {!data && (
+        <footer className="w-full py-4 text-center border-t border-gray-200 mt-10">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex items-center justify-center">
+              <img 
+                src="/lovable-uploads/845ba33d-1143-42dd-bd16-75d19bdbff27.png" 
+                alt="GenIA Logo" 
+                className="h-8 mr-2" 
+              />
+              <span className="text-sm text-muted-foreground">
+                © 2023 GenIA Communication Designers. Todos los derechos reservados.
+              </span>
+            </div>
+          </div>
+        </footer>
+      )}
     </div>
   );
 };
