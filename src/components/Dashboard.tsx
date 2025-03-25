@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Eye, MousePointer, ArrowRightLeft, DollarSign, MessageCircle, FileText } from "lucide-react";
 import MetricCard from './MetricCard';
@@ -15,7 +14,6 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ data }) => {
-  // Calculate key metrics
   const calculateMetrics = () => {
     const totalImpressions = data.reduce((sum, item) => {
       const impressions = typeof item.impressions === 'number' 
@@ -52,24 +50,19 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       return sum + revenue;
     }, 0);
     
-    // Calculate overall CTR
     const overallCTR = totalImpressions > 0 
       ? (totalClicks / totalImpressions) * 100 
       : 0;
       
-    // Calculate average ROI (either from direct ROI values or from cost/revenue)
     let averageROI;
     
-    // First check if we have direct ROI values
     const roiValues = data
       .filter(item => typeof item.roi === 'number' || parseFloat(item.roi))
       .map(item => typeof item.roi === 'number' ? item.roi : parseFloat(item.roi));
       
     if (roiValues.length > 0) {
-      // Calculate average of ROI values
       averageROI = roiValues.reduce((sum, roi) => sum + roi, 0) / roiValues.length;
     } else {
-      // Calculate ROI from cost and revenue
       averageROI = totalCost > 0 
         ? ((totalRevenue - totalCost) / totalCost) * 100 
         : 0;
@@ -88,12 +81,10 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
 
   const metrics = calculateMetrics();
 
-  // Format numbers for display
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat('es-ES').format(Math.round(num));
   };
 
-  // Format currency
   const formatCurrency = (num: number) => {
     return new Intl.NumberFormat('es-ES', {
       style: 'currency',
@@ -103,11 +94,9 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
     }).format(num);
   };
 
-  const mentorUrl = 'https://chatgpt.com/g/g-67e26ff502f881919b802f3ff8a77605-mentor-de-campanas-genia';
+  const mentorUrl = 'https://chatgpt.com/g/g-67e28bab27048191943a7bd55b84f667-mentor-de-campanas-coonic';
   
-  // Function to handle PDF export directly
   const handleExportPDF = () => {
-    // Get the ExportButton component's button and trigger its click event
     try {
       const exportButtonElement = document.querySelector('button[data-export-pdf="true"]');
       if (exportButtonElement instanceof HTMLButtonElement) {
@@ -126,7 +115,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
     <div className="space-y-8 w-full max-w-7xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <img 
-          src="/lovable-uploads/9ed53e46-56f7-4930-b0b6-abdadb20b640.png" 
+          src="/lovable-uploads/c93f086a-04d3-4841-a1dc-f6241d4a6198.png" 
           alt="Coonic Logo" 
           className="h-12" 
         />
@@ -170,9 +159,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       <InsightsSection data={data} />
       <MentorSection data={data} />
       
-      {/* Final action blocks - Export and Mentor */}
       <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Export PDF Card */}
         <Card className="rounded-xl border border-gray-200 shadow-sm bg-white">
           <CardContent className="p-8 flex flex-col items-center text-center">
             <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-5">
@@ -192,7 +179,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
           </CardContent>
         </Card>
         
-        {/* Mentor Card */}
         <Card className="rounded-xl border border-gray-200 shadow-sm bg-[#FFF9E6]">
           <CardContent className="p-8 flex flex-col items-center text-center">
             <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-5">
@@ -217,7 +203,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
         </Card>
       </div>
       
-      {/* Hidden ExportButton component that will be triggered by the visible button */}
       <div className="hidden">
         <ExportButton data={data} />
       </div>

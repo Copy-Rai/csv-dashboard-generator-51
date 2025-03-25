@@ -14,7 +14,7 @@ const Index = () => {
     console.log('Data processed:', processedData);
   };
 
-  const mentorUrl = 'https://chatgpt.com/g/g-67e26ff502f881919b802f3ff8a77605-mentor-de-campanas-genia';
+  const mentorUrl = 'https://chatgpt.com/g/g-67e28bab27048191943a7bd55b84f667-mentor-de-campanas-coonic';
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/5">
@@ -24,7 +24,7 @@ const Index = () => {
         <div className="flex flex-col items-center mb-8">
           <div className="w-full flex items-center justify-center md:justify-start mb-6">
             <img 
-              src="/lovable-uploads/9ed53e46-56f7-4930-b0b6-abdadb20b640.png" 
+              src="/lovable-uploads/c93f086a-04d3-4841-a1dc-f6241d4a6198.png" 
               alt="Coonic Logo" 
               className="h-16 md:h-20 animate-fade-in" 
             />
