@@ -24,7 +24,7 @@ const Index = () => {
         <div className="flex flex-col items-center mb-8">
           <div className="w-full flex items-center justify-center md:justify-start mb-6">
             <img 
-              src="/lovable-uploads/c93f086a-04d3-4841-a1dc-f6241d4a6198.png" 
+              src="/lovable-uploads/989aece5-3149-42a9-8880-d38634fc13ec.png" 
               alt="Coonic Logo" 
               className="h-16 md:h-20 animate-fade-in" 
             />
@@ -138,7 +138,7 @@ const Index = () => {
         )}
       </main>
       
-      {/* Footer with Coonic branding - Eliminado el logo duplicado */}
+      {/* Footer with Coonic branding - Removed duplicate logo */}
       {!data && (
         <footer className="w-full py-4 text-center border-t border-gray-200 mt-10">
           <div className="max-w-7xl mx-auto px-4">
