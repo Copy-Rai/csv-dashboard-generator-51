@@ -126,7 +126,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
     <div className="space-y-8 w-full max-w-7xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <img 
-          src="/lovable-uploads/24f1bd87-3048-4b2c-bace-8ad51f9b5e9d.png" 
+          src="/lovable-uploads/989aece5-3149-42a9-8880-d38634fc13ec.png" 
           alt="Coonic Logo" 
           className="h-12" 
         />
