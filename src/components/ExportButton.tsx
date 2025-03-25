@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { FileText } from 'lucide-react';
@@ -16,7 +17,10 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
   };
 
   const handleExport = async () => {
-    toast.info("Preparando el informe para exportación...");
+    toast.info("Preparando el informe para exportación...", {
+      duration: 3000,
+      id: "export-pdf-toast"
+    });
     
     try {
       // Crear un nuevo documento PDF
@@ -213,8 +217,10 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
         pdf.text("Generado por GenIA • Transform with Intelligence", pageWidth / 2, 287, { align: "center" });
       }
       
-      // Guardar el PDF
-      pdf.save(`informe_marketing_${formatDate().replace(/\//g, '-')}.pdf`);
+      // Guardar el PDF con un nombre único basado en la fecha
+      const fileName = `informe_marketing_${formatDate().replace(/\//g, '-')}.pdf`;
+      pdf.save(fileName);
+      
       toast.success("Informe exportado con éxito. Descargando el archivo...");
     } catch (error) {
       console.error("Error al generar el PDF:", error);
@@ -223,16 +229,14 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
   };
 
   return (
-    <div>
-      <Button 
-        onClick={handleExport} 
-        className="bg-[#FFC400] hover:bg-[#E5B200] text-black shadow-md" 
-        size="lg"
-        data-export-pdf="true"
-      >
-        <FileText className="mr-2 h-4 w-4" /> Exportar informe como PDF
-      </Button>
-    </div>
+    <Button 
+      onClick={handleExport} 
+      className="bg-[#FFC400] hover:bg-[#E5B200] text-black shadow-md" 
+      size="lg"
+      data-export-pdf="true"
+    >
+      <FileText className="mr-2 h-4 w-4" /> Exportar informe como PDF
+    </Button>
   );
 };
 

@@ -8,6 +8,7 @@ import MentorSection from './MentorSection';
 import ExportButton from './ExportButton';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
+import { toast } from 'sonner';
 
 interface DashboardProps {
   data: any[];
@@ -106,9 +107,18 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
   
   // Function to handle PDF export directly
   const handleExportPDF = () => {
-    const exportButtonElement = document.querySelector('button[data-export-pdf="true"]');
-    if (exportButtonElement instanceof HTMLButtonElement) {
-      exportButtonElement.click();
+    // Get the ExportButton component's button and trigger its click event
+    try {
+      const exportButtonElement = document.querySelector('button[data-export-pdf="true"]');
+      if (exportButtonElement instanceof HTMLButtonElement) {
+        exportButtonElement.click();
+      } else {
+        console.error("Export button element not found or not a button");
+        toast.error("No se pudo generar el PDF. Inténtalo de nuevo.");
+      }
+    } catch (error) {
+      console.error("Error triggering PDF export:", error);
+      toast.error("Error al generar el PDF. Inténtalo de nuevo.");
     }
   };
 
