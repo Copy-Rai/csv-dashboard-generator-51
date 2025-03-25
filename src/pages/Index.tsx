@@ -24,7 +24,7 @@ const Index = () => {
         <div className="flex flex-col items-center mb-8">
           <div className="w-full flex items-center justify-center md:justify-start mb-6">
             <img 
-              src="/lovable-uploads/989aece5-3149-42a9-8880-d38634fc13ec.png" 
+              src="/lovable-uploads/51309a7b-a98d-4a9f-a6b1-343b96146037.png" 
               alt="Coonic Logo" 
               className="h-16 md:h-20 animate-fade-in" 
             />
