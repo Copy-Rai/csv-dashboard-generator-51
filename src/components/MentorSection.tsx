@@ -238,6 +238,12 @@ const MentorSection: React.FC<MentorSectionProps> = ({ data }) => {
     );
     
     if (hasRevenue) {
+      // Calculate total revenue from data
+      const totalRevenue = data.reduce((sum, item) => {
+        const revenue = typeof item.revenue === 'number' ? item.revenue : parseFloat(item.revenue) || 0;
+        return sum + revenue;
+      }, 0);
+      
       insights.push({
         type: 'educational',
         title: 'Sobre los ingresos',
