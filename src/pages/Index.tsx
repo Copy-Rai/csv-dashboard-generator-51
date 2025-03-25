@@ -5,7 +5,7 @@ import Dashboard from '@/components/Dashboard';
 import { Toaster } from "@/components/ui/sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, HelpCircle } from "lucide-react";
+import { MessageCircle, HelpCircle, FileText, Brain } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const Index = () => {
@@ -100,28 +100,48 @@ const Index = () => {
               </div>
             </div>
             
-            {/* Mentor Card - Positioned at the end as an alternative entry */}
-            <Card className="border border-[#FFC400]/30 bg-[#FFC400]/5 shadow-md max-w-3xl mx-auto mb-10">
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold flex items-center gap-2">
-                      🧠 <span>¿Tienes dudas con tu informe?</span>
-                    </h3>
-                    <p className="text-muted-foreground mt-2">
-                      Habla con tu mentor GenIA y te ayudará a interpretar los resultados paso a paso.
-                    </p>
+            {/* Action cards - Export and Mentor */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto mb-12">
+              {/* Export PDF Card */}
+              <Card className="rounded-xl border border-gray-200 shadow-sm bg-white">
+                <CardContent className="p-8 flex flex-col items-center text-center">
+                  <div className="w-16 h-16 rounded-full bg-[#FFC400]/20 flex items-center justify-center mb-5">
+                    <FileText className="h-8 w-8 text-[#FFC400]" />
                   </div>
+                  <h3 className="text-2xl font-semibold mb-2 font-display">¿Quieres guardar este análisis?</h3>
+                  <p className="text-muted-foreground mb-6 max-w-md">
+                    Exporta el informe en formato PDF para revisarlo más tarde o compartirlo con tu equipo.
+                  </p>
+                  <Button 
+                    onClick={() => window.open("#exportar-pdf", "_self")}
+                    className="bg-[#FFC400] hover:bg-[#E5B200] text-black shadow-md px-6 py-6 w-full font-medium"
+                    size="lg"
+                  >
+                    <FileText className="mr-2 h-5 w-5" /> Exportar informe como PDF
+                  </Button>
+                </CardContent>
+              </Card>
+              
+              {/* Mentor Card */}
+              <Card className="rounded-xl border border-gray-200 shadow-sm bg-[#FFF9E6]">
+                <CardContent className="p-8 flex flex-col items-center text-center">
+                  <div className="w-16 h-16 rounded-full bg-[#FFC400]/20 flex items-center justify-center mb-5">
+                    <Brain className="h-8 w-8 text-[#FFC400]" />
+                  </div>
+                  <h3 className="text-2xl font-semibold mb-2 font-display">¿Tienes dudas con tu informe?</h3>
+                  <p className="text-muted-foreground mb-6 max-w-md">
+                    Habla con tu mentor GenIA y te ayudará a interpretar los resultados paso a paso.
+                  </p>
                   <Button 
                     onClick={() => window.open(mentorUrl, '_blank')}
-                    className="bg-[#FFC400] hover:bg-[#E5B200] text-black shadow-md px-5 py-6 mt-2 md:mt-0"
+                    className="bg-[#FFC400] hover:bg-[#E5B200] text-black shadow-md px-6 py-6 w-full font-medium"
                     size="lg"
                   >
                     <MessageCircle className="mr-2 h-5 w-5" /> 🧠 Habla con tu mentor GenIA
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </>
         ) : (
           <Dashboard data={data} />
