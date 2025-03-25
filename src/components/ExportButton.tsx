@@ -29,7 +29,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data }) => {
       let yPosition = 20;
       
       // Añadir logo en la parte superior
-      const logoPath = '/lovable-uploads/24f1bd87-3048-4b2c-bace-8ad51f9b5e9d.png';
+      const logoPath = '/lovable-uploads/8f861b62-bd03-49fd-bdc2-22094cce3d3a.png';
       try {
         // Intentar añadir el logo como imagen
         pdf.addImage(logoPath, 'PNG', (pageWidth - 60) / 2, 10, 60, 15);
