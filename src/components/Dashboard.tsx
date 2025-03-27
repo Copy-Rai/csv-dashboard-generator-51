@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Eye, MousePointer, ArrowRightLeft, DollarSign, MessageCircle, FileText } from "lucide-react";
 import MetricCard from './MetricCard';
@@ -36,19 +35,15 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       return 0;
     };
     
-    // Verificar si hay campos requeridos en los datos
-    let hasMissingFields = false;
-    const requiredFields = ['impressions', 'clicks', 'conversions', 'cost', 'revenue'];
-    
     // Calcular totales sumando todos los registros
     const totalImpressions = data.reduce((sum, item) => {
       const impressions = ensureNumber(item.impressions);
-      console.log(`Impresiones en registro: ${impressions}`);
       return sum + impressions;
     }, 0);
     
+    // Preferimos link_clicks cuando está disponible
     const totalClicks = data.reduce((sum, item) => {
-      const clicks = ensureNumber(item.clicks);
+      const clicks = item.link_clicks !== undefined ? ensureNumber(item.link_clicks) : ensureNumber(item.clicks);
       return sum + clicks;
     }, 0);
     
@@ -57,8 +52,9 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       return sum + conversions;
     }, 0);
     
+    // Preferimos amount_spent_eur cuando está disponible
     const totalCost = data.reduce((sum, item) => {
-      const cost = ensureNumber(item.cost);
+      const cost = item.amount_spent_eur !== undefined ? ensureNumber(item.amount_spent_eur) : ensureNumber(item.cost);
       return sum + cost;
     }, 0);
     

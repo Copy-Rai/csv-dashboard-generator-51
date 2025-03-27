@@ -2,11 +2,14 @@
 interface CampaignData {
   platform: string;
   campaign_name?: string;
+  ad_set_name?: string;
   date?: string;
   impressions: number;
   clicks: number;
+  link_clicks?: number;
   conversions: number;
   cost: number;
+  amount_spent_eur?: number;
   revenue: number;
   ctr?: number;
   cpc?: number;
@@ -89,19 +92,22 @@ export const processCSV = (csvContent: string): CampaignData[] => {
       throw new Error("El archivo CSV no contiene datos suficientes");
     }
     
-    // Map column variations to standardized field names - Ampliado con variaciones de Meta Ads
+    // Map column variations to standardized field names - Ampliado con variaciones europeas y multi-idioma
     const fieldMappings: Record<string, string[]> = {
       platform: ['platform', 'plataforma', 'red', 'red social', 'source', 'origen', 'canal', 'fuente', 'media source', 'publisher', 'publisher_platform', 'ad_network', 'network', 'delivery platform', 'plataforma de entrega'],
-      campaign_name: ['campaign', 'campaign_name', 'campaña', 'nombre_campaña', 'nombre campaña', 'nombre de campaña', 'campaign name', 'ad_name', 'ad name', 'adset', 'adset_name', 'campaign_name', 'campana', 'conjunto de anuncios', 'nombre del conjunto de anuncios', 'ad set name', 'nombre del conjunto'],
+      campaign_name: ['campaign', 'campaign_name', 'campaña', 'nombre_campaña', 'nombre campaña', 'nombre de campaña', 'campaign name', 'ad_name', 'ad name', 'campana', 'campaign_id', 'id de campaña', 'id campaña'],
+      ad_set_name: ['adset', 'adset_name', 'ad set name', 'ad_set_name', 'conjunto de anuncios', 'nombre del conjunto de anuncios', 'nombre del conjunto', 'adset name', 'ad set id', 'adset_id', 'conjunto'],
       date: ['date', 'fecha', 'day', 'día', 'mes', 'month', 'reporting_start', 'fecha_inicio', 'reporting_end', 'time', 'periodo', 'fecha de inicio', 'fecha de finalizacion'],
       impressions: ['impressions', 'impresiones', 'impr', 'impres', 'views', 'vistas', 'imprs', 'impression', 'alcance', 'reach', 'viewability', 'impressions_total', 'impresiones_totales', 'shown', 'displays', 'impresiones mostradas'],
-      clicks: ['clicks', 'clics', 'cliques', 'click', 'clic', 'pulsaciones', 'click_total', 'link clicks', 'link_clicks', 'outbound clicks', 'outbound_clicks', 'all_clicks', 'total_clicks', 'clics en el enlace', 'clics de enlace', 'clics en enlaces'],
+      clicks: ['clicks', 'clics', 'cliques', 'click', 'clic', 'pulsaciones', 'click_total', 'all_clicks', 'total_clicks', 'clicks_all', 'total de clics'],
+      link_clicks: ['link clicks', 'link_clicks', 'outbound clicks', 'outbound_clicks', 'clics en el enlace', 'clics de enlace', 'clics en enlaces', 'clics totales en el enlace'],
       conversions: ['conversions', 'conversiones', 'conv', 'converts', 'convs', 'results', 'resultados', 'outcomes', 'purchase', 'compras', 'acquisition', 'adquisiciones', 'leads', 'registros', 'sign_ups', 'leads_form', 'registrations', 'app_install', 'install', 'instalaciones', 'actions', 'complete_registration'],
-      cost: ['cost', 'costo', 'coste', 'gasto', 'spend', 'gastos', 'inversión', 'inversion', 'amount_spent', 'money_spent', 'importe_gastado', 'budget', 'presupuesto', 'costo_total', 'gasto_total', 'importe gastado (eur)', 'importe gastado', 'coste (eur)', 'coste (usd)', 'amount spent (eur)', 'amount spent (€)'],
+      cost: ['cost', 'costo', 'coste', 'gasto', 'spend', 'gastos', 'inversión', 'inversion', 'budget', 'presupuesto', 'costo_total', 'gasto_total'],
+      amount_spent_eur: ['amount_spent', 'money_spent', 'importe_gastado', 'importe gastado (eur)', 'importe gastado', 'coste (eur)', 'coste (usd)', 'amount spent (eur)', 'amount spent (€)', 'importe invertido (eur)', 'importe (eur)'],
       revenue: ['revenue', 'ingresos', 'revenue', 'income', 'ganancia', 'ganancias', 'ingreso', 'purchases_value', 'purchase_value', 'valor_compra', 'sales_amount', 'sales', 'ventas', 'sales_revenue', 'purchases', 'conversion_value', 'valor_conversion', 'revenue_total', 'valor_total', 'return', 'total_revenue', 'valor de conversion'],
-      ctr: ['ctr', 'click_through_rate', 'click through rate', 'tasa_clics', 'tasa de clics', 'ratio_clicks', 'porcentaje_clics', 'porcentaje de clics en el enlace', 'ctr (all)'],
-      cpc: ['cpc', 'cost_per_click', 'cost per click', 'coste_por_clic', 'coste por clic', 'costo_por_clic', 'cpc_medio', 'average_cpc', 'costo por clic (eur)', 'costo por resultado (eur)', 'cost per link click (€)', 'costo por clic en el enlace (€)'],
-      cpm: ['cpm', 'cost_per_1000_impression', 'cost per thousand', 'coste_por_mil', 'coste por mil impresiones', 'costo_por_mil', 'cpm_medio', 'average_cpm', 'costo por 1000 impresiones mostradas (eur)', 'cpm (cost per 1,000 impressions)', 'cpm (costo por 1.000 impresiones)']
+      ctr: ['ctr', 'click_through_rate', 'click through rate', 'tasa_clics', 'tasa de clics', 'ratio_clicks', 'porcentaje_clics', 'porcentaje de clics en el enlace', 'ctr (all)', 'ctr (porcentaje de clics en el enlace)'],
+      cpc: ['cpc', 'cost_per_click', 'cost per click', 'coste_por_clic', 'coste por clic', 'costo_por_clic', 'cpc_medio', 'average_cpc', 'costo por clic (eur)', 'costo por resultado (eur)', 'cost per link click (€)', 'costo por clic en el enlace (€)', 'cpc (costo por clic en el enlace) (eur)'],
+      cpm: ['cpm', 'cost_per_1000_impression', 'cost per thousand', 'coste_por_mil', 'coste por mil impresiones', 'costo_por_mil', 'cpm_medio', 'average_cpm', 'costo por 1000 impresiones mostradas (eur)', 'cpm (cost per 1,000 impressions)', 'cpm (costo por 1.000 impresiones)', 'cpm (costo por mil impresiones) (eur)']
     };
     
     // Enhanced column detection - find indices of all possible variations
@@ -197,7 +203,12 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
         'facebook ads': 'Facebook',
         'meta': 'Meta',
         'instagram': 'Instagram',
-        'ig': 'Instagram'
+        'ig': 'Instagram',
+        'google': 'Google Ads',
+        'google ads': 'Google Ads',
+        'twitter': 'X',
+        'twitter ads': 'X',
+        'x': 'X'
       };
       
       // Normalizar el nombre de la plataforma
@@ -222,11 +233,19 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
       }
     }
     
+    // Ensure we use link_clicks when available, otherwise fallback to regular clicks
     // Extracting metrics with improved European number parsing
     const impressions = columnMap.impressions !== undefined ? parseEuropeanNumeric(values[columnMap.impressions]) : 0;
-    const clicks = columnMap.clicks !== undefined ? parseEuropeanNumeric(values[columnMap.clicks]) : 0;
+    const rawClicks = columnMap.clicks !== undefined ? parseEuropeanNumeric(values[columnMap.clicks]) : 0;
+    const linkClicks = columnMap.link_clicks !== undefined ? parseEuropeanNumeric(values[columnMap.link_clicks]) : 0;
+    const clicks = linkClicks > 0 ? linkClicks : rawClicks; // Prefer link_clicks when available
+    
     const conversions = columnMap.conversions !== undefined ? parseEuropeanNumeric(values[columnMap.conversions]) : 0;
-    const cost = columnMap.cost !== undefined ? parseEuropeanNumeric(values[columnMap.cost]) : 0;
+    
+    // Para cost, preferimos amount_spent_eur cuando está disponible (más específico)
+    const amountSpentEur = columnMap.amount_spent_eur !== undefined ? parseEuropeanNumeric(values[columnMap.amount_spent_eur]) : 0;
+    const generalCost = columnMap.cost !== undefined ? parseEuropeanNumeric(values[columnMap.cost]) : 0;
+    const cost = amountSpentEur > 0 ? amountSpentEur : generalCost;
     
     // Para revenue, si no está explícito, lo calculamos con un valor estimado por conversión
     let revenue = columnMap.revenue !== undefined ? parseEuropeanNumeric(values[columnMap.revenue]) : 0;
@@ -257,45 +276,45 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
     // Calculate ROI
     const roi = cost > 0 ? ((revenue - cost) / cost) * 100 : 0;
     
-    // Check if we have any data on this row (now we include all rows)
-    const hasData = true;
+    // IMPORTANTE: Incluimos todas las filas, incluso si tienen datos incompletos
     
-    // IMPORTANTE: Ya no excluimos filas aunque no tengan todos los datos
-    if (hasData) {
-      // Campaign data object with metrics
-      const campaignData: CampaignData = {
+    // Campaign data object with metrics
+    const campaignData: CampaignData = {
+      platform,
+      campaign_name: columnMap.campaign_name !== undefined ? values[columnMap.campaign_name] : undefined,
+      ad_set_name: columnMap.ad_set_name !== undefined ? values[columnMap.ad_set_name] : undefined,
+      date: columnMap.date !== undefined ? values[columnMap.date] : undefined,
+      impressions,
+      clicks,
+      link_clicks: linkClicks,
+      conversions,
+      cost,
+      amount_spent_eur: amountSpentEur,
+      revenue,
+      ctr,
+      cpc,
+      cpm,
+      roi,
+      status: campaignStatus // Guardamos el estado para depuración
+    };
+    
+    // Log para depuración
+    if (i <= 5 || i % 100 === 0) {
+      console.log(`Fila ${i} procesada:`, {
         platform,
-        campaign_name: columnMap.campaign_name !== undefined ? values[columnMap.campaign_name] : undefined,
-        date: columnMap.date !== undefined ? values[columnMap.date] : undefined,
-        impressions,
-        clicks,
-        conversions,
-        cost,
-        revenue,
-        ctr,
-        cpc,
-        cpm,
-        roi,
-        status: campaignStatus // Guardamos el estado para depuración
-      };
-      
-      // Log para depuración
-      if (i <= 5 || i % 100 === 0) {
-        console.log(`Fila ${i} procesada:`, {
-          platform,
-          campaign: campaignData.campaign_name,
-          impresiones: impressions,
-          clics: clicks,
-          conversiones: conversions,
-          coste: cost
-        });
-      }
-      
-      results.push(campaignData);
-      rowsProcessed++;
-    } else {
-      emptyDataRows++;
+        campaign: campaignData.campaign_name,
+        adSet: campaignData.ad_set_name,
+        impresiones: impressions,
+        clics: clicks,
+        linkClics: linkClicks,
+        conversiones: conversions,
+        coste: cost,
+        amountSpentEur: amountSpentEur
+      });
     }
+    
+    results.push(campaignData);
+    rowsProcessed++;
   }
   
   // Log de estadísticas para depuración
@@ -304,7 +323,7 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
   return results;
 }
 
-// Clean CSV data - ahora simplemente asegura que todos los registros se incluyan 
+// Clean CSV data - asegura que todos los registros se incluyan
 export const cleanCSVData = (data: CampaignData[]): CampaignData[] => {
   // Log para depuración
   console.log("Total de registros antes de limpieza:", data.length);
@@ -341,9 +360,9 @@ export const cleanCSVData = (data: CampaignData[]): CampaignData[] => {
 // Calculate key metrics from the processed data
 export const calculateMetrics = (data: CampaignData[]) => {
   const totalImpressions = data.reduce((sum, item) => sum + item.impressions, 0);
-  const totalClicks = data.reduce((sum, item) => sum + item.clicks, 0);
+  const totalClicks = data.reduce((sum, item) => sum + (item.link_clicks || item.clicks), 0);
   const totalConversions = data.reduce((sum, item) => sum + item.conversions, 0);
-  const totalCost = data.reduce((sum, item) => sum + item.cost, 0);
+  const totalCost = data.reduce((sum, item) => sum + (item.amount_spent_eur || item.cost), 0);
   const totalRevenue = data.reduce((sum, item) => sum + item.revenue, 0);
   
   const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;

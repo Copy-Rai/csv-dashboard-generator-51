@@ -19,8 +19,10 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
     total: number;
     active: number;
     completed: number;
+    recentlyCompleted: number;
     emptyData: number;
     delimiters?: string;
+    numberFormat?: string;
   } | null>(null);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -86,7 +88,17 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
         let data;
         
         try {
-          setProcessingStatus("Procesando con formato europeo (punto y coma como delimitador, coma como decimal)...");
+          // Detectar delimitadores para mostrar en UI
+          const commaCount = (text.split('\n')[0].match(/,/g) || []).length;
+          const semicolonCount = (text.split('\n')[0].match(/;/g) || []).length;
+          const delimiterInfo = semicolonCount > commaCount ? 
+            "punto y coma (formato europeo)" : "coma (formato internacional)";
+          
+          const numberFormat = semicolonCount > commaCount ? 
+            "europeo (coma como decimal)" : "internacional (punto como decimal)";
+          
+          setProcessingStatus(`Procesando archivo con formato ${numberFormat} y delimitador ${delimiterInfo}...`);
+          
           data = processCSV(text);
           
           setProcessingStatus("Normalizando datos y calculando métricas...");
@@ -98,23 +110,22 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
             return;
           }
           
-          // Detectar delimitadores usados (para mostrar en UI)
-          const commaCount = (text.split('\n')[0].match(/,/g) || []).length;
-          const semicolonCount = (text.split('\n')[0].match(/;/g) || []).length;
-          const delimiterInfo = semicolonCount > commaCount ? 
-            "punto y coma (formato europeo)" : "coma (formato internacional)";
-          
           const stats = {
             total: data.length,
             active: data.filter(item => 
+              item.status === 'active' || 
               item.campaign_name?.toLowerCase()?.includes('active')).length,
             completed: data.filter(item => 
-              item.campaign_name?.toLowerCase()?.includes('completed') || 
-              item.campaign_name?.toLowerCase()?.includes('recently_completed')).length,
+              item.status === 'completed' || 
+              item.campaign_name?.toLowerCase()?.includes('completed')).length,
+            recentlyCompleted: data.filter(item => 
+              item.status === 'recently_completed' || 
+              item.campaign_name?.toLowerCase()?.includes('recently')).length,
             emptyData: data.filter(item => 
               (item.impressions === 0 && item.clicks === 0) || 
               (item.cost === 0 && item.revenue === 0)).length,
-            delimiters: delimiterInfo
+            delimiters: delimiterInfo,
+            numberFormat: numberFormat
           };
           
           setProcessingStats(stats);
@@ -204,8 +215,14 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
                 {processingStats.completed > 0 && (
                   <p><strong>Campañas completadas:</strong> {processingStats.completed}</p>
                 )}
+                {processingStats.recentlyCompleted > 0 && (
+                  <p><strong>Campañas recientes:</strong> {processingStats.recentlyCompleted}</p>
+                )}
                 {processingStats.delimiters && (
-                  <p><strong>Formato detectado:</strong> {processingStats.delimiters}</p>
+                  <p><strong>Delimitador detectado:</strong> {processingStats.delimiters}</p>
+                )}
+                {processingStats.numberFormat && (
+                  <p><strong>Formato numérico:</strong> {processingStats.numberFormat}</p>
                 )}
                 {hasWarnings && (
                   <p className="text-amber-600"><strong>Filas con datos incompletos:</strong> {processingStats.emptyData}</p>
@@ -254,8 +271,9 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
                 <p className="mb-1"><strong>Compatible con:</strong></p>
                 <ul className="list-disc pl-4 space-y-1">
                   <li>Formato europeo (punto y coma como delimitador, coma como decimal)</li>
-                  <li>Archivos CSV exportados de Meta Ads, Google Ads</li>
-                  <li>Incluye todas las filas con datos numéricos</li>
+                  <li>Formato internacional (coma como delimitador, punto como decimal)</li>
+                  <li>Archivos CSV exportados de Meta Ads, Google Ads, X/Twitter</li>
+                  <li>Identificación automática de plataformas y columnas</li>
                 </ul>
               </div>
             </div>
