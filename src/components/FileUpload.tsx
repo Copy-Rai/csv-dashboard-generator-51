@@ -40,7 +40,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
     setError(null);
     
     try {
-      console.log("🔄 INICIO PROCESAMIENTO DE ARCHIVO - VERSIÓN: 4.0.0");
+      console.log("🔄 INICIO PROCESAMIENTO DE ARCHIVO - VERSIÓN: 5.0.0");
       console.log(`📁 Archivo recibido: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
       
       const reader = new FileReader();
@@ -55,18 +55,26 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
           console.log(`📄 Contenido CSV cargado: ${csvContent.length} caracteres`);
           
           // Verify the first few lines for debugging
-          const previewLines = csvContent.split('\n').slice(0, 5);
+          console.log("🔍 PRIMERAS LÍNEAS DEL ARCHIVO:");
+          const previewLines = csvContent.split('\n').slice(0, 10);
           previewLines.forEach((line, idx) => {
-            console.log(`🔎 Línea ${idx}: "${line.substring(0, 120)}..."`);
+            console.log(`🔎 Línea ${idx}: "${line.substring(0, 200)}..."`);
           });
           
           // Process the CSV data
           const processedData = processCSV(csvContent);
           console.log(`✅ Datos procesados: ${processedData.length} registros`);
           
+          // Inspect a sample of the data
+          console.log("🔍 MUESTRA DE DATOS PROCESADOS:");
+          processedData.slice(0, 5).forEach((item, idx) => {
+            console.log(`📊 Registro ${idx}:`, JSON.stringify(item, null, 2));
+          });
+          
           // Verify impressions in raw data
           const rawImpressionTotal = processedData.reduce((sum, item) => {
-            return sum + (typeof item.impressions === 'number' ? item.impressions : 0);
+            const impressionVal = typeof item.impressions === 'number' ? item.impressions : 0;
+            return sum + impressionVal;
           }, 0);
           console.log(`📊 TOTAL IMPRESIONES ANTES DE LIMPIEZA: ${rawImpressionTotal}`);
           

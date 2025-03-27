@@ -55,13 +55,14 @@ const detectDelimiter = (csvContent: string): string => {
 const detectLanguage = (headers: string[]): string => {
   // Normalize headers for language detection
   const normalizedHeaders = headers.map(h => h.toLowerCase());
+  console.log("👁️ ENCABEZADOS NORMALIZADOS PARA DETECCIÓN DE IDIOMA:", normalizedHeaders);
   
   // Spanish keywords
-  const spanishKeywords = ['impresiones', 'coste', 'campaña', 'resultados', 'importe', 'gastado'];
+  const spanishKeywords = ['impresiones', 'coste', 'campaña', 'resultados', 'importe', 'gastado', 'clics', 'impr'];
   // English keywords
-  const englishKeywords = ['impressions', 'cost', 'campaign', 'results', 'amount', 'spent'];
+  const englishKeywords = ['impressions', 'cost', 'campaign', 'results', 'amount', 'spent', 'clicks', 'impr'];
   // French keywords
-  const frenchKeywords = ['impressions', 'coût', 'campagne', 'résultats', 'montant', 'dépensé'];
+  const frenchKeywords = ['impressions', 'coût', 'campagne', 'résultats', 'montant', 'dépensé', 'clics', 'impr'];
   
   // Count matches for each language
   const spanishMatches = spanishKeywords.filter(keyword => 
@@ -78,6 +79,21 @@ const detectLanguage = (headers: string[]): string => {
   
   console.log(`🌐 Detección de idioma - Español: ${spanishMatches}, Inglés: ${englishMatches}, Francés: ${frenchMatches}`);
   
+  // Log exact matches for debugging
+  spanishKeywords.forEach(keyword => {
+    const matchingHeaders = normalizedHeaders.filter(header => header.includes(keyword));
+    if (matchingHeaders.length > 0) {
+      console.log(`🇪🇸 Palabra clave española "${keyword}" encontrada en: ${matchingHeaders.join(', ')}`);
+    }
+  });
+  
+  englishKeywords.forEach(keyword => {
+    const matchingHeaders = normalizedHeaders.filter(header => header.includes(keyword));
+    if (matchingHeaders.length > 0) {
+      console.log(`🇬🇧 Palabra clave inglesa "${keyword}" encontrada en: ${matchingHeaders.join(', ')}`);
+    }
+  });
+  
   // Return the language with the most matches
   if (spanishMatches > englishMatches && spanishMatches > frenchMatches) return 'es';
   if (frenchMatches > englishMatches && frenchMatches > spanishMatches) return 'fr';
@@ -88,33 +104,40 @@ const detectLanguage = (headers: string[]): string => {
 const detectPlatform = (headers: string[]): string => {
   // Normalize headers for platform detection
   const joinedHeaders = headers.join(' ').toLowerCase();
+  console.log("🔍 ENCABEZADOS UNIDOS PARA DETECCIÓN DE PLATAFORMA:", joinedHeaders);
   
   // Platform-specific patterns
-  const metaPatterns = ['facebook', 'meta', 'fb', 'instagram', 'ig', 'adset', 'conjunto', 'anuncios'];
-  const googlePatterns = ['google', 'adwords', 'cpc', 'display', 'search', 'youtube', 'campañas'];
+  const metaPatterns = ['facebook', 'meta', 'fb', 'instagram', 'ig', 'adset', 'conjunto', 'anuncios', 'ad account', 'cuenta'];
+  const googlePatterns = ['google', 'adwords', 'cpc', 'display', 'search', 'youtube', 'campañas', 'campaign'];
   const xPatterns = ['twitter', 'x ', 'tweet', 'promoted', 'engagement'];
   const linkedinPatterns = ['linkedin', 'sponsored', 'content', 'inmail', 'follower'];
   const tiktokPatterns = ['tiktok', 'bytedance', 'video view', 'creatives'];
   
   // Check for platform patterns
-  const metaMatches = metaPatterns.filter(pattern => joinedHeaders.includes(pattern)).length;
-  const googleMatches = googlePatterns.filter(pattern => joinedHeaders.includes(pattern)).length;
-  const xMatches = xPatterns.filter(pattern => joinedHeaders.includes(pattern)).length;
-  const linkedinMatches = linkedinPatterns.filter(pattern => joinedHeaders.includes(pattern)).length;
-  const tiktokMatches = tiktokPatterns.filter(pattern => joinedHeaders.includes(pattern)).length;
+  const metaMatches = metaPatterns.filter(pattern => joinedHeaders.includes(pattern));
+  const googleMatches = googlePatterns.filter(pattern => joinedHeaders.includes(pattern));
+  const xMatches = xPatterns.filter(pattern => joinedHeaders.includes(pattern));
+  const linkedinMatches = linkedinPatterns.filter(pattern => joinedHeaders.includes(pattern));
+  const tiktokMatches = tiktokPatterns.filter(pattern => joinedHeaders.includes(pattern));
   
-  console.log(`🔍 Detección de plataforma - Meta: ${metaMatches}, Google: ${googleMatches}, X: ${xMatches}, LinkedIn: ${linkedinMatches}, TikTok: ${tiktokMatches}`);
+  console.log(`🔍 Términos de Meta encontrados: ${metaMatches.join(', ')}`);
+  console.log(`🔍 Términos de Google encontrados: ${googleMatches.join(', ')}`);
+  console.log(`🔍 Términos de X encontrados: ${xMatches.join(', ')}`);
+  console.log(`🔍 Términos de LinkedIn encontrados: ${linkedinMatches.join(', ')}`);
+  console.log(`🔍 Términos de TikTok encontrados: ${tiktokMatches.join(', ')}`);
+  
+  console.log(`🔍 Matches por plataforma - Meta: ${metaMatches.length}, Google: ${googleMatches.length}, X: ${xMatches.length}, LinkedIn: ${linkedinMatches.length}, TikTok: ${tiktokMatches.length}`);
   
   // Return the platform with the most matches
-  if (metaMatches > googleMatches && metaMatches > xMatches && metaMatches > linkedinMatches && metaMatches > tiktokMatches) 
+  if (metaMatches.length > googleMatches.length && metaMatches.length > xMatches.length && metaMatches.length > linkedinMatches.length && metaMatches.length > tiktokMatches.length) 
     return 'Meta';
-  if (googleMatches > metaMatches && googleMatches > xMatches && googleMatches > linkedinMatches && googleMatches > tiktokMatches) 
+  if (googleMatches.length > metaMatches.length && googleMatches.length > xMatches.length && googleMatches.length > linkedinMatches.length && googleMatches.length > tiktokMatches.length) 
     return 'Google Ads';
-  if (xMatches > metaMatches && xMatches > googleMatches && xMatches > linkedinMatches && xMatches > tiktokMatches) 
+  if (xMatches.length > metaMatches.length && xMatches.length > googleMatches.length && xMatches.length > linkedinMatches.length && xMatches.length > tiktokMatches.length) 
     return 'X (Twitter)';
-  if (linkedinMatches > metaMatches && linkedinMatches > googleMatches && linkedinMatches > xMatches && linkedinMatches > tiktokMatches) 
+  if (linkedinMatches.length > metaMatches.length && linkedinMatches.length > googleMatches.length && linkedinMatches.length > xMatches.length && linkedinMatches.length > tiktokMatches.length) 
     return 'LinkedIn';
-  if (tiktokMatches > metaMatches && tiktokMatches > googleMatches && tiktokMatches > xMatches && tiktokMatches > linkedinMatches) 
+  if (tiktokMatches.length > metaMatches.length && tiktokMatches.length > googleMatches.length && tiktokMatches.length > xMatches.length && tiktokMatches.length > linkedinMatches.length) 
     return 'TikTok';
   
   return 'Unknown'; // Default if no clear platform is detected
@@ -128,11 +151,11 @@ const normalizeText = (text: string): string => {
 // Enhanced CSV processing with better platform and column detection
 export const processCSV = (csvContent: string): CampaignData[] => {
   try {
-    console.log("🔄 PROCESANDO CSV - VERSIÓN MEJORADA");
+    console.log("🔄 PROCESANDO CSV - VERSIÓN MEJORADA 2.0");
     
     // Detect delimiter automatically
     const delimiter = detectDelimiter(csvContent);
-    console.log(`🔧 Delimitador seleccionado: "${delimiter}"`);
+    console.log(`🔧 Delimitador seleccionado: "${delimiter === '\t' ? 'tabulador' : delimiter}"`);
     
     // Split the lines, filter out empty lines
     const lines = csvContent.split(/\r?\n/).filter(line => line.trim() !== '');
@@ -147,7 +170,8 @@ export const processCSV = (csvContent: string): CampaignData[] => {
     
     let headers = headerLine.split(delimiter).map(header => normalizeText(header.trim()));
     
-    console.log("📊 Encabezados detectados:", headers);
+    console.log("📊 ENCABEZADOS DETECTADOS (ORIGINALES):", headerLine.split(delimiter));
+    console.log("📊 ENCABEZADOS NORMALIZADOS:", headers);
     
     // Detect language based on headers
     const language = detectLanguage(headers);
@@ -159,7 +183,7 @@ export const processCSV = (csvContent: string): CampaignData[] => {
       campaign_name: ['campaign', 'campaign_name', 'campaña', 'nombre_campaña', 'nombre campaña', 'nombre de campaña', 'campaign name', 'kampagne', 'campagne', 'nombre campaña', 'naziv kampanje'],
       ad_set_name: ['adset', 'adset_name', 'ad set name', 'ad_set_name', 'conjunto de anuncios', 'nombre del conjunto', 'ensemble dannonces', 'nom de lensemble', 'grupo de anuncios'],
       date: ['date', 'fecha', 'day', 'día', 'mes', 'month', 'reporting_start', 'fecha_inicio', 'reporting_end', 'datum', 'date', 'periode'],
-      impressions: ['impressions', 'impresiones', 'impr', 'impres', 'views', 'vistas', 'imprs', 'impression', 'impressionen', 'anzeigehäufigkeit', 'visualizaciones', 'visualizacoes', 'impressões', 'impressions', 'impr.', 'vista', 'visualizaciones', 'imprenta', 'impressione'],
+      impressions: ['impressions', 'impresiones', 'impr', 'impres', 'views', 'vistas', 'imprs', 'impression', 'impressionen', 'anzeigehäufigkeit', 'visualizaciones', 'visualizacoes', 'impressões', 'impressions', 'impr.', 'vista', 'visualizaciones', 'imprenta', 'impressione', 'impr', 'impresiones'],
       clicks: ['clicks', 'clics', 'cliques', 'click', 'clic', 'pulsaciones', 'click_total', 'all_clicks', 'klicks', 'klick', 'pulsacion', 'pulsações', 'cliques', 'toque', 'clics en el enlace', 'cliques no link', 'clics', 'clics totales', 'all clicks', 'total clicks'],
       link_clicks: ['link clicks', 'link_clicks', 'outbound clicks', 'outbound_clicks', 'clics en el enlace', 'clics de enlace', 'link_klicks', 'klicks auf links', 'cliques no link', 'cliques de lien', 'clics en enlaces', 'clicks on links'],
       conversions: ['conversions', 'conversiones', 'conv', 'converts', 'convs', 'results', 'resultados', 'outcomes', 'conversion', 'konversionen', 'umwandlungen', 'resultats', 'ergebnisse', 'resultaten', 'resultados', 'resultats', 'conversioni', 'purchase', 'purchases', 'compras', 'adquisiciones', 'achats'],
@@ -174,7 +198,12 @@ export const processCSV = (csvContent: string): CampaignData[] => {
     // Find indices of all possible field variations
     const columnMap: Record<string, number> = {};
     
-    // First try exact matches, then fuzzy matches
+    // Log each header for visual inspection
+    headers.forEach((header, index) => {
+      console.log(`📋 Encabezado ${index}: "${header}"`);
+    });
+    
+    // Try exact and partial matches for each field
     Object.entries(fieldMappings).forEach(([standardField, variations]) => {
       // Try exact match first
       let foundIndex = headers.findIndex(header => 
@@ -190,6 +219,12 @@ export const processCSV = (csvContent: string): CampaignData[] => {
       
       if (foundIndex !== -1) {
         columnMap[standardField] = foundIndex;
+        console.log(`✅ Campo '${standardField}' mapeado a la columna ${foundIndex}: "${headers[foundIndex]}"`);
+      } else {
+        console.log(`❌ No se pudo mapear el campo '${standardField}' a ninguna columna`);
+        
+        // Show which variations we were looking for
+        console.log(`🔍 Variaciones buscadas para '${standardField}': ${variations.join(', ')}`);
       }
     });
     
@@ -279,6 +314,11 @@ export const processCSV = (csvContent: string): CampaignData[] => {
         continue;
       }
 
+      // Log the first few rows for debugging
+      if (i <= 5 || (i % 50 === 0 && i <= 200)) {
+        console.log(`🔍 VALORES DE LA FILA ${i}:`, values);
+      }
+      
       // Extract platform - use detected platform if not found in row
       let platform = defaultPlatform;
       if (columnMap.platform !== undefined && values[columnMap.platform]) {
@@ -355,9 +395,10 @@ export const processCSV = (csvContent: string): CampaignData[] => {
         ? parseNumeric(values[columnMap.impressions])
         : 0;
         
-      // For debugging, log high impression values
-      if (impressions > 100000) {
-        console.log(`🔍 Fila ${i}: ${impressions} impresiones. Original: "${values[columnMap.impressions || 0]}"`);
+      // For debugging, log each row's impressions value
+      if (i <= 10 || impressions > 10000 || (i % 20 === 0 && i <= 100)) {
+        const originalValue = columnMap.impressions !== undefined ? values[columnMap.impressions] : "N/A";
+        console.log(`🔢 Fila ${i}: Impresiones - Original: "${originalValue}", Parseado: ${impressions}`);
       }
       
       // Accumulate total impressions for verification
@@ -448,6 +489,11 @@ export const processCSV = (csvContent: string): CampaignData[] => {
         cpm,
         roi
       };
+      
+      // Log complete object for debugging (for a sample of rows)
+      if (i <= 5 || (i % 50 === 0 && i <= 100)) {
+        console.log(`📊 Objeto completo fila ${i}:`, campaignData);
+      }
       
       results.push(campaignData);
       rowsProcessed++;
