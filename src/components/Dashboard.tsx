@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Eye, MousePointer, ArrowRightLeft, DollarSign, MessageCircle, FileText } from "lucide-react";
 import MetricCard from './MetricCard';
@@ -14,45 +15,52 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ data }) => {
-  // Efecto para verificar los datos cuando el componente carga
+  // Effect to verify data when component loads
   useEffect(() => {
-    console.log("🔄 DASHBOARD RECARGADO - VERSIÓN RESTAURADA");
+    console.log("🔄 DASHBOARD RECARGADO - VERSIÓN MEJORADA");
     console.log("📊 Datos recibidos:", data.length, "registros");
     
-    // Imprimir impresiones por cada registro para verificar el total
+    // Print impressions for each record to verify the total
     let totalImps = 0;
+    let validRecords = 0;
+    
     data.forEach((item, index) => {
-      // Convertimos explícitamente a número para evitar problemas de tipo
+      // Explicitly convert to number to avoid type issues
       const imp = typeof item.impressions === 'number' ? item.impressions : 
                  (item.impressions ? Number(item.impressions) : 0);
-      totalImps += imp;
       
-      // Mostrar registros con valores significativos para depuración
+      if (imp > 0) {
+        validRecords++;
+        totalImps += imp;
+      }
+      
+      // Show records with significant values for debugging
       if (index < 10 || index % 50 === 0 || imp > 10000) {
         console.log(`📄 Registro ${index}: ${imp} impresiones - Campaña: ${item.campaign_name || 'Sin nombre'}`);
       }
     });
     
     console.log("🔢 TOTAL IMPRESIONES VERIFICACIÓN INICIAL:", totalImps);
+    console.log(`📊 Registros con impresiones > 0: ${validRecords} de ${data.length}`);
     
-    // Verificar si hay registros con 0 impresiones
+    // Check for records with 0 impressions
     const emptyRecords = data.filter(item => !item.impressions || item.impressions === 0).length;
     console.log(`⚠️ Registros con 0 impresiones: ${emptyRecords} de ${data.length}`);
   }, [data]);
 
   const calculateMetrics = () => {
-    console.log("⚙️ RECALCULANDO MÉTRICAS - VERSIÓN RESTAURADA");
+    console.log("⚙️ RECALCULANDO MÉTRICAS - VERSIÓN MEJORADA");
     console.log("📊 Calculando métricas con", data.length, "registros");
     
-    // Mostrar contenido de algunos registros para verificación
+    // Show some records for verification
     console.log("🔍 Muestra de los primeros 3 registros:", JSON.stringify(data.slice(0, 3), null, 2));
     
-    // Verificamos las impresiones totales antes de cualquier operación
+    // Verify total impressions before any operation
     const rawTotalImpressions = data.reduce((sum, item) => {
       const val = typeof item.impressions === 'number' ? item.impressions : 
                  (item.impressions ? Number(item.impressions) : 0);
       
-      // Solo hacemos logging detallado para valores significativos
+      // Only log detailed info for significant values
       if (val > 10000) {
         console.log(`📊 Sumando impresiones importantes: ${val} de campaña: ${item.campaign_name || 'Sin nombre'}`);
       }
@@ -60,7 +68,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
     }, 0);
     console.log("📈 Impresiones totales verificación inicial:", rawTotalImpressions);
     
-    // Convertir y asegurar que todos los valores sean numéricos
+    // Convert and ensure all values are numeric
     const ensureNumber = (value: any): number => {
       if (value === null || value === undefined) {
         return 0;
@@ -71,7 +79,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       }
       
       if (typeof value === 'string') {
-        // Formato europeo: la coma es el separador decimal
+        // European format: comma is the decimal separator
         const parsed = parseFloat(value.replace(',', '.'));
         return !isNaN(parsed) ? parsed : 0;
       }
@@ -79,23 +87,23 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       return 0;
     };
     
-    // Calcular totales sumando todos los registros sin excepciones
+    // Calculate totals by summing all records without exceptions
     const totalImpressions = data.reduce((sum, item, index) => {
-      // Convertimos el valor a número de forma segura
+      // Safely convert the value to a number
       const impressions = ensureNumber(item.impressions);
       
-      // Log para cada campaña con muchas impresiones para verificar
-      if (impressions > 5000 || index < 5 || index % 100 === 0) {
+      // Log for each campaign with many impressions for verification
+      if (impressions > 10000 || index < 5 || index % 100 === 0) {
         console.log(`📝 [${index}] ${item.campaign_name || "Sin nombre"}: ${impressions} impresiones`);
       }
       
       return sum + impressions;
     }, 0);
     
-    // Log para verificar las impresiones totales después de procesar
+    // Log to verify total impressions after processing
     console.log("📊 Impresiones totales después de procesar:", totalImpressions);
     
-    // Preferimos link_clicks cuando está disponible
+    // Prefer link_clicks when available
     const totalClicks = data.reduce((sum, item) => {
       const clicks = item.link_clicks !== undefined ? ensureNumber(item.link_clicks) : ensureNumber(item.clicks);
       return sum + clicks;
@@ -106,7 +114,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       return sum + conversions;
     }, 0);
     
-    // Preferimos amount_spent_eur cuando está disponible
+    // Prefer amount_spent_eur when available
     const totalCost = data.reduce((sum, item) => {
       const cost = item.amount_spent_eur !== undefined ? ensureNumber(item.amount_spent_eur) : ensureNumber(item.cost);
       return sum + cost;
@@ -117,7 +125,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       return sum + revenue;
     }, 0);
     
-    // Calcular métricas derivadas
+    // Calculate derived metrics
     const overallCTR = totalImpressions > 0 
       ? (totalClicks / totalImpressions) * 100 
       : 0;
@@ -130,12 +138,12 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       ? (totalCost / totalImpressions) * 1000
       : 0;
     
-    // Calcular ROI
+    // Calculate ROI
     const averageROI = totalCost > 0
       ? ((totalRevenue - totalCost) / totalCost) * 100
       : 0;
     
-    // Log de depuración
+    // Debug log
     console.log("✅ Métricas calculadas:", {
       totalImpressions,
       totalClicks,
@@ -303,7 +311,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
               className="bg-primary hover:bg-primary/80 text-white shadow-md px-6 py-6 font-medium"
               size="lg"
             >
-              <MessageCircle className="mr-2 h-5 w-5" /> ��💬 Habla con tu mentor
+              <MessageCircle className="mr-2 h-5 w-5" /> 💬 Habla con tu mentor
             </Button>
           </CardContent>
         </Card>

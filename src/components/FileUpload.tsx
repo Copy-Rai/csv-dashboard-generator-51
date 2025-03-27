@@ -40,7 +40,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
     setError(null);
     
     try {
-      console.log("🔄 INICIO PROCESAMIENTO DE ARCHIVO - VERSIÓN: 3.0.0");
+      console.log("🔄 INICIO PROCESAMIENTO DE ARCHIVO - VERSIÓN: 4.0.0");
       console.log(`📁 Archivo recibido: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
       
       const reader = new FileReader();
@@ -53,47 +53,61 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
           
           const csvContent = e.target.result as string;
           console.log(`📄 Contenido CSV cargado: ${csvContent.length} caracteres`);
-          console.log(`📄 Primeras 100 caracteres: ${csvContent.substring(0, 100)}...`);
           
-          // Verificación pre-procesamiento de líneas
-          const rawLines = csvContent.split('\n');
-          console.log(`🔍 CSV tiene ${rawLines.length} líneas en total antes de procesamiento`);
-          
-          // Muestra primeras 5 líneas para depuración
-          rawLines.slice(0, 5).forEach((line, idx) => {
-            console.log(`🔎 Línea ${idx}: "${line.substring(0, 80)}..."`);
+          // Verify the first few lines for debugging
+          const previewLines = csvContent.split('\n').slice(0, 5);
+          previewLines.forEach((line, idx) => {
+            console.log(`🔎 Línea ${idx}: "${line.substring(0, 120)}..."`);
           });
           
+          // Process the CSV data
           const processedData = processCSV(csvContent);
           console.log(`✅ Datos procesados: ${processedData.length} registros`);
           
-          // Verificación de impresiones antes de limpieza
+          // Verify impressions in raw data
           const rawImpressionTotal = processedData.reduce((sum, item) => {
-            const impressions = typeof item.impressions === 'number' ? item.impressions : 0;
-            return sum + impressions;
+            return sum + (typeof item.impressions === 'number' ? item.impressions : 0);
           }, 0);
           console.log(`📊 TOTAL IMPRESIONES ANTES DE LIMPIEZA: ${rawImpressionTotal}`);
           
+          // Clean the data
           const cleanedData = cleanCSVData(processedData);
           console.log(`✅ Datos limpiados: ${cleanedData.length} registros`);
           
-          // Verificación individual de filas con muchas impresiones
+          // Verify individual rows with high impressions
           let highImpressionsCount = 0;
-          cleanedData.forEach((item, idx) => {
-            if (item.impressions > 10000) {
-              console.log(`🔍 Registro ${idx} con muchas impresiones: ${item.impressions} - ${item.campaign_name || 'Sin nombre'}`);
-              highImpressionsCount++;
-            }
-          });
-          console.log(`🔍 Se encontraron ${highImpressionsCount} registros con más de 10,000 impresiones`);
+          let topImpressionsTotal = 0;
           
+          cleanedData
+            .filter(item => item.impressions > 10000)
+            .sort((a, b) => b.impressions - a.impressions)
+            .slice(0, 10)
+            .forEach((item, idx) => {
+              console.log(`🔍 Registro con muchas impresiones #${idx+1}: ${item.impressions} - ${item.campaign_name || 'Sin nombre'}`);
+              highImpressionsCount++;
+              topImpressionsTotal += item.impressions;
+            });
+          
+          console.log(`🔍 Se encontraron ${highImpressionsCount} registros con más de 10,000 impresiones`);
+          console.log(`📊 Impresiones en top 10 campañas: ${topImpressionsTotal}`);
+          
+          // Verify final impression total
           const totalImpressions = cleanedData.reduce((sum, item) => sum + (item.impressions || 0), 0);
           console.log(`📊 TOTAL IMPRESIONES EN DATOS FINALES: ${totalImpressions}`);
           
+          // Pass the data to the parent component
           onFileUploaded(cleanedData);
           
+          // Show success message with platform detection
+          const platforms = Array.from(new Set(cleanedData.map(item => item.platform))).filter(p => p !== "Unknown");
+          
+          let platformMessage = "";
+          if (platforms.length > 0) {
+            platformMessage = `Plataformas detectadas: ${platforms.join(', ')}`;
+          }
+          
           toast.success(`Archivo procesado correctamente: ${cleanedData.length} registros`, {
-            description: `Se han detectado ${totalImpressions.toLocaleString()} impresiones en total.`
+            description: `Se han detectado ${totalImpressions.toLocaleString()} impresiones en total. ${platformMessage}`
           });
           
           resetState();
@@ -137,10 +151,10 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
     if (files.length) {
       const file = files[0];
       
-      if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+      if (!file.name.endsWith('.csv') && !file.name.endsWith('.txt') && file.type !== 'text/csv' && file.type !== 'text/plain') {
         setError("Por favor, sube un archivo CSV válido");
         toast.error("Formato de archivo no válido", {
-          description: "Solo se aceptan archivos CSV."
+          description: "Solo se aceptan archivos CSV o TXT con formato CSV."
         });
         return;
       }
@@ -177,7 +191,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
           type="file"
           ref={fileInputRef}
           className="hidden"
-          accept=".csv"
+          accept=".csv,.txt"
           onChange={handleFileInputChange}
         />
         
@@ -189,7 +203,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
           <div className="space-y-2">
             <h3 className="text-lg font-medium">Arrastra tu archivo CSV o haz clic para subir</h3>
             <p className="text-muted-foreground max-w-sm mx-auto">
-              Sube tu archivo CSV con los datos de tus campañas de Facebook, Google Ads, etc.
+              Soportamos archivos de Facebook Ads, Google Ads, LinkedIn, TikTok, X y más
             </p>
           </div>
           
@@ -213,7 +227,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
           </Button>
           
           <p className="text-sm text-muted-foreground">
-            Formato soportado: CSV (Soporta formato europeo con , como separador decimal)
+            Formatos soportados: CSV (detectamos automáticamente el delimitador y formato)
           </p>
         </div>
       </Card>
