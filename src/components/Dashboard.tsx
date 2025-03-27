@@ -321,22 +321,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       </div>
     </div>
   );
-  
-  // Helper functions
-  function formatNumber(num: number) {
-    return new Intl.NumberFormat('es-ES').format(Math.round(num));
-  }
-
-  function formatCurrency(num: number) {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(num);
-  }
 };
-
-const mentorUrl = 'https://chatgpt.com/g/g-67e28bab27048191943a7bd55b84f667-mentor-de-campanas-coonic';
 
 export default Dashboard;
