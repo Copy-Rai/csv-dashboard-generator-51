@@ -320,10 +320,14 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
   // Log de estadísticas para depuración
   console.log(`Filas procesadas: ${rowsProcessed}, Filas omitidas: ${rowsSkipped}, Filas sin datos: ${emptyDataRows}`);
   
+  // IMPORTANTE: Agregamos un log detallado de las impresiones totales antes de devolver los resultados
+  const totalImpressions = results.reduce((sum, item) => sum + item.impressions, 0);
+  console.log(`Total de impresiones en los datos procesados: ${totalImpressions}`);
+  
   return results;
 }
 
-// Clean CSV data - asegura que todos los registros se incluyan
+// Clean CSV data - asegura que todos los registros se incluyan sin filtrar por estado
 export const cleanCSVData = (data: CampaignData[]): CampaignData[] => {
   // Log para depuración
   console.log("Total de registros antes de limpieza:", data.length);
@@ -337,7 +341,17 @@ export const cleanCSVData = (data: CampaignData[]): CampaignData[] => {
   
   console.log("Distribución por plataforma:", platforms);
   
-  // Ahora limpiamos cada elemento sin filtrar
+  // Mostrar la suma total de impresiones antes de la limpieza para verificar
+  const totalImpressionsBeforeCleaning = data.reduce((sum, item) => sum + item.impressions, 0);
+  console.log(`Total de impresiones antes de limpieza: ${totalImpressionsBeforeCleaning}`);
+  
+  // Verificar si hay campañas con status 'inactive' que tengan impresiones
+  const inactiveWithImpressions = data.filter(item => 
+    item.status === 'inactive' && item.impressions > 0
+  );
+  console.log(`Campañas inactivas con impresiones: ${inactiveWithImpressions.length}`);
+  
+  // ¡IMPORTANTE! Ya no filtramos por estado, solo limpiamos los datos
   const cleanedData = data.map(item => {
     // Clean platform field if it contains semicolons or other separators
     let platform = item.platform;
@@ -350,6 +364,10 @@ export const cleanCSVData = (data: CampaignData[]): CampaignData[] => {
       platform,
     };
   });
+  
+  // Mostrar la suma total de impresiones después de la limpieza para verificar
+  const totalImpressionsAfterCleaning = cleanedData.reduce((sum, item) => sum + item.impressions, 0);
+  console.log(`Total de impresiones después de limpieza: ${totalImpressionsAfterCleaning}`);
   
   // Log de conteo de registros después de limpieza
   console.log("Total de registros después de limpieza:", cleanedData.length);

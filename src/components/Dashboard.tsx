@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Eye, MousePointer, ArrowRightLeft, DollarSign, MessageCircle, FileText } from "lucide-react";
 import MetricCard from './MetricCard';
@@ -20,6 +21,10 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
     // Mostrar contenido de algunos registros para verificación
     console.log("Muestra de los primeros 3 registros:", data.slice(0, 3));
     
+    // Verificamos las impresiones totales antes de cualquier operación
+    const rawTotalImpressions = data.reduce((sum, item) => sum + (item.impressions || 0), 0);
+    console.log("Impresiones totales antes de procesar:", rawTotalImpressions);
+    
     // Convertir y asegurar que todos los valores sean numéricos
     const ensureNumber = (value: any): number => {
       if (typeof value === 'number' && !isNaN(value)) {
@@ -35,11 +40,15 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       return 0;
     };
     
-    // Calcular totales sumando todos los registros
+    // Calcular totales sumando todos los registros sin filtrar por estado
     const totalImpressions = data.reduce((sum, item) => {
       const impressions = ensureNumber(item.impressions);
+      console.log(`Registro con ${impressions} impresiones:`, item.campaign_name || "Sin nombre");
       return sum + impressions;
     }, 0);
+    
+    // Log para verificar las impresiones totales después de procesar
+    console.log("Impresiones totales después de procesar:", totalImpressions);
     
     // Preferimos link_clicks cuando está disponible
     const totalClicks = data.reduce((sum, item) => {
