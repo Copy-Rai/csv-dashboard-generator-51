@@ -19,7 +19,15 @@ interface CampaignData {
 
 // Detector automático de delimitador con preferencia para punto y coma
 const detectDelimiter = (csvContent: string): string => {
-  const firstLine = csvContent.split('\n')[0];
+  // Obtenemos las primeras líneas para analizar
+  const lines = csvContent.split('\n').filter(line => line.trim() !== '').slice(0, 5);
+  
+  if (lines.length === 0) {
+    console.error("❌ CSV vacío o sin contenido válido");
+    return ','; // Default en caso de error
+  }
+  
+  const firstLine = lines[0];
   
   // Contamos las ocurrencias de cada posible delimitador
   const commaCount = (firstLine.match(/,/g) || []).length;
@@ -28,11 +36,51 @@ const detectDelimiter = (csvContent: string): string => {
   
   console.log(`⚙️ Delimitadores detectados: , (${commaCount}), ; (${semicolonCount}), \\t (${tabCount})`);
   
-  // Preferimos punto y coma cuando hay más o igual cantidad que comas
-  // ya que con formato europeo, las comas pueden estar en los números
-  if (semicolonCount >= 1) return ';';
-  if (tabCount > commaCount) return '\t';
-  return ',';
+  // Análisis adicional de todas las líneas de muestra
+  let bestDelimiter = '';
+  let highestConsistency = -1;
+  
+  // Para cada delimitador, verificamos la consistencia en el número de campos
+  for (const delimiter of [',', ';', '\t']) {
+    let consistencyScore = 0;
+    let prevFieldCount = -1;
+    
+    for (const line of lines) {
+      if (line.trim() === '') continue;
+      
+      const fieldCount = line.split(delimiter).length;
+      
+      // Si ya procesamos una línea anterior, comparamos
+      if (prevFieldCount !== -1) {
+        // Aumentamos la consistencia si el número de campos es igual
+        if (fieldCount === prevFieldCount) {
+          consistencyScore++;
+        }
+      }
+      
+      prevFieldCount = fieldCount;
+    }
+    
+    console.log(`⚙️ Consistencia para delimitador "${delimiter === '\t' ? '\\t' : delimiter}": ${consistencyScore}`);
+    
+    // Si este delimitador tiene mejor consistencia, lo seleccionamos
+    if (consistencyScore > highestConsistency) {
+      highestConsistency = consistencyScore;
+      bestDelimiter = delimiter;
+    }
+  }
+  
+  // Si la consistencia no es clara, usamos la heurística original
+  if (highestConsistency <= 0) {
+    // Preferimos punto y coma cuando hay más o igual cantidad que comas
+    // ya que con formato europeo, las comas pueden estar en los números
+    if (semicolonCount >= 1) return ';';
+    if (tabCount > commaCount) return '\t';
+    return ',';
+  }
+  
+  console.log(`⚙️ Mejor delimitador por consistencia: "${bestDelimiter === '\t' ? '\\t' : bestDelimiter}"`);
+  return bestDelimiter;
 };
 
 // Función para normalizar texto removiendo acentos
@@ -46,6 +94,9 @@ const parseEuropeanNumeric = (value: string | undefined): number => {
   
   // Limpiamos el valor de símbolos de moneda y otros caracteres no numéricos
   let cleaned = value.replace(/[€$%]/g, '').trim();
+  
+  // Verificación de depuración para valores grandes
+  const originalValue = cleaned;
   
   // Formato europeo: la coma es el separador decimal
   // Si contiene punto, asumimos que es separador de miles
@@ -61,6 +112,11 @@ const parseEuropeanNumeric = (value: string | undefined): number => {
   // Convertir a número
   const num = parseFloat(cleaned);
   
+  // Verificación especial para valores grandes
+  if (num > 10000) {
+    console.log(`🔢 Parseando valor grande: "${originalValue}" -> ${num}`);
+  }
+  
   // Si no es un número válido, devolver 0
   if (isNaN(num)) {
     console.warn(`⚠️ Valor no numérico detectado: ${value} -> ${cleaned}`);
@@ -73,7 +129,7 @@ const parseEuropeanNumeric = (value: string | undefined): number => {
 // Process CSV content to structured data with enhanced flexibility
 export const processCSV = (csvContent: string): CampaignData[] => {
   try {
-    console.log("🔄 PROCESANDO CSV - VERSIÓN: 2.0.2");
+    console.log("🔄 PROCESANDO CSV - VERSIÓN: 3.0.0");
     // Conteo de líneas para verificación
     const lineCount = csvContent.split('\n').length;
     console.log(`📋 Archivo CSV recibido con ${lineCount} líneas`);
@@ -82,16 +138,16 @@ export const processCSV = (csvContent: string): CampaignData[] => {
     const delimiter = detectDelimiter(csvContent);
     console.log(`🔧 Delimitador seleccionado: "${delimiter}"`);
     
-    const lines = csvContent.split(/\r?\n/);
+    // Split the lines, filter out empty lines
+    const lines = csvContent.split(/\r?\n/).filter(line => line.trim() !== '');
+    
+    if (lines.length < 1) {
+      throw new Error("El archivo CSV no contiene datos válidos");
+    }
+    
     let headers = lines[0].split(delimiter).map(header => normalizeText(header.trim()));
     
     console.log("📊 Encabezados detectados:", headers);
-    
-    // Handle empty lines and remove any blank headers
-    const filteredLines = lines.filter(line => line.trim() !== '');
-    if (filteredLines.length < 2) {
-      throw new Error("El archivo CSV no contiene datos suficientes");
-    }
     
     // Map column variations to standardized field names - Ampliado con variaciones europeas y multi-idioma
     const fieldMappings: Record<string, string[]> = {
@@ -140,6 +196,8 @@ export const processCSV = (csvContent: string): CampaignData[] => {
       if (foundIndex !== -1) {
         columnMap[standardField] = foundIndex;
         console.log(`Campo '${standardField}' encontrado en columna: "${headers[foundIndex]}"`);
+      } else {
+        console.log(`⚠️ No se encontró columna para '${standardField}'`);
       }
     }
     
@@ -147,7 +205,7 @@ export const processCSV = (csvContent: string): CampaignData[] => {
     
     // Si no encontramos la plataforma, asignamos Meta/Facebook por defecto para archivos de Meta Ads
     if (columnMap.platform === undefined) {
-      console.log("No se encontró columna para 'platform', asumiendo Meta/Facebook");
+      console.log("🔍 No se encontró columna para 'platform', asumiendo Meta/Facebook");
       
       // Intentamos detectar si es de Meta/Facebook por los nombres de columnas
       const metaSpecificColumns = ['adset_name', 'delivery_platform', 'clics en el enlace', 'importe gastado (eur)'];
@@ -156,11 +214,40 @@ export const processCSV = (csvContent: string): CampaignData[] => {
       );
       
       if (isMeta) {
-        console.log("Detectado archivo de Meta Ads por nombres de columnas específicos");
+        console.log("✅ Detectado archivo de Meta Ads por nombres de columnas específicos");
       }
     }
     
-    return processWithDelimiter(filteredLines, columnMap, delimiter);
+    // Necesitamos asegurarnos de que existe una columna de impresiones
+    if (columnMap.impressions === undefined) {
+      console.error("❌ No se encontró columna para 'impressions', esto es crítico");
+      
+      // Intentemos hacer una búsqueda más agresiva
+      const possibleImpressionColumns = headers.map((header, index) => ({ 
+        header, 
+        index,
+        score: header.includes('impr') || header.includes('view') ? 5 : 
+               header.includes('most') || header.includes('vista') ? 3 : 0
+      })).filter(item => item.score > 0);
+      
+      if (possibleImpressionColumns.length > 0) {
+        // Usamos la columna con mayor puntuación
+        possibleImpressionColumns.sort((a, b) => b.score - a.score);
+        columnMap.impressions = possibleImpressionColumns[0].index;
+        console.log(`⚠️ Usando columna alternativa para impresiones: "${headers[columnMap.impressions]}"`);
+      } else {
+        console.error("❌ No se pudo encontrar ninguna columna para impresiones, el procesamiento podría fallar");
+      }
+    }
+    
+    console.log("📊 Iniciando procesamiento de filas...");
+    const results = processWithDelimiter(lines, columnMap, delimiter);
+    
+    // Verificación final de datos procesados
+    const totalImpressions = results.reduce((sum, item) => sum + (item.impressions || 0), 0);
+    console.log(`📊 TOTAL IMPRESIONES TRAS PROCESAMIENTO COMPLETO: ${totalImpressions}`);
+    
+    return results;
   } catch (error) {
     console.error("❌ Error parsing CSV:", error);
     throw new Error("Error processing CSV data. Please check the format.");
@@ -179,8 +266,9 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
   let rowsSkipped = 0;
   let emptyDataRows = 0;
   let totalImpressionsFound = 0;
+  let impRowCount = 0;
   
-  // Process each line of the CSV
+  // Process each line of the CSV, starting with index 1 to skip header
   for (let i = 1; i < lines.length; i++) {
     if (!lines[i].trim()) {
       rowsSkipped++;
@@ -239,11 +327,33 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
     }
     
     // Extracting metrics with improved European number parsing
-    const impressions = columnMap.impressions !== undefined ? parseEuropeanNumeric(values[columnMap.impressions]) : 0;
-    totalImpressionsFound += impressions;
+    let impressions = 0;
+    if (columnMap.impressions !== undefined) {
+      // Obtenemos el valor si existe
+      if (values[columnMap.impressions] !== undefined) {
+        // Parseamos el valor con el método mejorado
+        impressions = parseEuropeanNumeric(values[columnMap.impressions]);
+        
+        // DEBUG para encontrar valores grandes
+        if (impressions > 10000) {
+          console.log(`🔍 Fila ${i} con muchas impresiones (${impressions}): "${values[columnMap.impressions]}"`);
+        }
+        
+        // Incrementamos el contador
+        if (impressions > 0) {
+          impRowCount++;
+        }
+        
+        totalImpressionsFound += impressions;
+      } else {
+        console.warn(`⚠️ Fila ${i}: No hay valor para impresiones en la columna ${columnMap.impressions}`);
+      }
+    } else {
+      console.warn(`⚠️ Fila ${i}: No se encontró columna para impresiones`);
+    }
     
     // Si es uno de los primeros 5 registros o un múltiplo de 10, mostrar detalle
-    if (i <= 5 || i % 10 === 0 || impressions > 10000) {
+    if (i <= 5 || i % 20 === 0 || impressions > 10000) {
       console.log(`📝 Fila ${i}: encontradas ${impressions} impresiones. Valor original: "${values[columnMap.impressions]}"`);
     }
     
@@ -320,6 +430,7 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
   // Log de estadísticas para depuración
   console.log(`📊 FINALIZADO: Filas procesadas: ${rowsProcessed}, Filas omitidas: ${rowsSkipped}, Filas sin datos: ${emptyDataRows}`);
   console.log(`📊 FINALIZADO: Total de impresiones encontradas: ${totalImpressionsFound}`);
+  console.log(`📊 FINALIZADO: Filas con impresiones > 0: ${impRowCount} de ${rowsProcessed} totales`);
   
   // IMPORTANTE: Verificación final de impresiones totales
   const verifiedTotalImpressions = results.reduce((sum, item) => sum + item.impressions, 0);
@@ -335,7 +446,7 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
 
 // Clean CSV data - NUNCA filtrar por estado, incluir TODOS los registros
 export const cleanCSVData = (data: CampaignData[]): CampaignData[] => {
-  console.log("🧹 LIMPIEZA DE DATOS - VERSIÓN: 2.0.2");
+  console.log("🧹 LIMPIEZA DE DATOS - VERSIÓN: 3.0.0");
   console.log("🧹 Total de registros antes de limpieza:", data.length);
   
   // Mostrar distribución por plataforma
@@ -374,6 +485,9 @@ export const cleanCSVData = (data: CampaignData[]): CampaignData[] => {
     return {
       ...item,
       platform,
+      // Aseguramos que impressions sea siempre un número
+      impressions: typeof item.impressions === 'number' ? item.impressions : 
+                  item.impressions ? Number(item.impressions) : 0
     };
   });
   
@@ -383,6 +497,14 @@ export const cleanCSVData = (data: CampaignData[]): CampaignData[] => {
   
   // Log de conteo de registros después de limpieza
   console.log("🧹 Total de registros después de limpieza:", cleanedData.length);
+  
+  // Verificación final de impresiones totales 
+  console.log(`📊 VERIFICACIÓN FINAL LIMPIEZA: Total impresiones después de limpieza: ${totalImpressionsAfterCleaning}`);
+  console.log(`📊 Diff de impresiones durante limpieza: ${totalImpressionsAfterCleaning - totalImpressionsBeforeCleaning}`);
+  
+  // Verificar cuántas filas tienen >0 impresiones
+  const impFilas = cleanedData.filter(item => item.impressions > 0).length;
+  console.log(`📊 Verificación final: De ${cleanedData.length} filas, ${impFilas} tienen impresiones > 0`);
   
   return cleanedData;
 };

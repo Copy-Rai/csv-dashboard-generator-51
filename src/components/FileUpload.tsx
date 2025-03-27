@@ -40,7 +40,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
     setError(null);
     
     try {
-      console.log("🔄 INICIO PROCESAMIENTO DE ARCHIVO - VERSIÓN: 2.0.2");
+      console.log("🔄 INICIO PROCESAMIENTO DE ARCHIVO - VERSIÓN: 3.0.0");
       console.log(`📁 Archivo recibido: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
       
       const reader = new FileReader();
@@ -55,11 +55,37 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
           console.log(`📄 Contenido CSV cargado: ${csvContent.length} caracteres`);
           console.log(`📄 Primeras 100 caracteres: ${csvContent.substring(0, 100)}...`);
           
+          // Verificación pre-procesamiento de líneas
+          const rawLines = csvContent.split('\n');
+          console.log(`🔍 CSV tiene ${rawLines.length} líneas en total antes de procesamiento`);
+          
+          // Muestra primeras 5 líneas para depuración
+          rawLines.slice(0, 5).forEach((line, idx) => {
+            console.log(`🔎 Línea ${idx}: "${line.substring(0, 80)}..."`);
+          });
+          
           const processedData = processCSV(csvContent);
           console.log(`✅ Datos procesados: ${processedData.length} registros`);
           
+          // Verificación de impresiones antes de limpieza
+          const rawImpressionTotal = processedData.reduce((sum, item) => {
+            const impressions = typeof item.impressions === 'number' ? item.impressions : 0;
+            return sum + impressions;
+          }, 0);
+          console.log(`📊 TOTAL IMPRESIONES ANTES DE LIMPIEZA: ${rawImpressionTotal}`);
+          
           const cleanedData = cleanCSVData(processedData);
           console.log(`✅ Datos limpiados: ${cleanedData.length} registros`);
+          
+          // Verificación individual de filas con muchas impresiones
+          let highImpressionsCount = 0;
+          cleanedData.forEach((item, idx) => {
+            if (item.impressions > 10000) {
+              console.log(`🔍 Registro ${idx} con muchas impresiones: ${item.impressions} - ${item.campaign_name || 'Sin nombre'}`);
+              highImpressionsCount++;
+            }
+          });
+          console.log(`🔍 Se encontraron ${highImpressionsCount} registros con más de 10,000 impresiones`);
           
           const totalImpressions = cleanedData.reduce((sum, item) => sum + (item.impressions || 0), 0);
           console.log(`📊 TOTAL IMPRESIONES EN DATOS FINALES: ${totalImpressions}`);

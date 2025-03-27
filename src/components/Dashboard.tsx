@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Eye, MousePointer, ArrowRightLeft, DollarSign, MessageCircle, FileText } from "lucide-react";
 import MetricCard from './MetricCard';
@@ -17,27 +16,32 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ data }) => {
   // Efecto para verificar los datos cuando el componente carga
   useEffect(() => {
-    console.log("🔄 DASHBOARD RECARGADO - VERSIÓN: 2.0.2");
+    console.log("🔄 DASHBOARD RECARGADO - VERSIÓN: 3.0.0");
     console.log("📊 Datos recibidos:", data.length, "registros");
     
     // Imprimir impresiones por cada registro para verificar el total
     let totalImps = 0;
     data.forEach((item, index) => {
+      // Convertimos explícitamente a número para evitar problemas de tipo
       const imp = typeof item.impressions === 'number' ? item.impressions : 
                  (item.impressions ? Number(item.impressions) : 0);
       totalImps += imp;
       
-      // Mostrar solo algunos registros para no saturar la consola
+      // Mostrar registros con valores significativos para depuración
       if (index < 10 || index % 50 === 0 || imp > 10000) {
         console.log(`📄 Registro ${index}: ${imp} impresiones - Campaña: ${item.campaign_name || 'Sin nombre'}`);
       }
     });
     
     console.log("🔢 TOTAL IMPRESIONES VERIFICACIÓN INICIAL:", totalImps);
+    
+    // Verificar si hay registros con 0 impresiones
+    const emptyRecords = data.filter(item => !item.impressions || item.impressions === 0).length;
+    console.log(`⚠️ Registros con 0 impresiones: ${emptyRecords} de ${data.length}`);
   }, [data]);
 
   const calculateMetrics = () => {
-    console.log("⚙️ RECALCULANDO MÉTRICAS - VERSIÓN: 2.0.2");
+    console.log("⚙️ RECALCULANDO MÉTRICAS - VERSIÓN: 3.0.0");
     console.log("📊 Calculando métricas con", data.length, "registros");
     
     // Mostrar contenido de algunos registros para verificación
@@ -47,7 +51,11 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
     const rawTotalImpressions = data.reduce((sum, item) => {
       const val = typeof item.impressions === 'number' ? item.impressions : 
                  (item.impressions ? Number(item.impressions) : 0);
-      console.log(`📊 Sumando impresiones: ${val} de campaña: ${item.campaign_name || 'Sin nombre'}`);
+      
+      // Solo hacemos logging detallado para valores significativos
+      if (val > 10000) {
+        console.log(`📊 Sumando impresiones importantes: ${val} de campaña: ${item.campaign_name || 'Sin nombre'}`);
+      }
       return sum + val;
     }, 0);
     console.log("📈 Impresiones totales verificación inicial:", rawTotalImpressions);
@@ -71,21 +79,37 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       return 0;
     };
     
-    // Calcular totales sumando todos los registros sin excepciones
+    // Inicializamos acumuladores para depuración
     let acumulador = 0;
+    let registrosContados = 0;
+    let registrosExcluidos = 0;
+    
+    // Calcular totales sumando todos los registros sin excepciones
     const totalImpressions = data.reduce((sum, item, index) => {
+      // Convertimos el valor a número de forma segura
       const impressions = ensureNumber(item.impressions);
+      
+      // Acumulamos para depuración
       acumulador += impressions;
+      
+      // Registramos si estamos contando o excluyendo este registro
+      if (impressions > 0) {
+        registrosContados++;
+      } else {
+        registrosExcluidos++;
+      }
       
       // Log para cada campaña con muchas impresiones para verificar
       if (impressions > 5000 || index < 5 || index % 100 === 0) {
         console.log(`📝 [${index}] ${item.campaign_name || "Sin nombre"}: ${impressions} impresiones (Acumulado: ${acumulador})`);
       }
+      
       return sum + impressions;
     }, 0);
     
     // Log para verificar las impresiones totales después de procesar
     console.log("📊 Impresiones totales después de procesar:", totalImpressions);
+    console.log(`📊 Estadísticas: ${registrosContados} registros con impresiones, ${registrosExcluidos} sin impresiones`);
     
     // Preferimos link_clicks cuando está disponible
     const totalClicks = data.reduce((sum, item) => {

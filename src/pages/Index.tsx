@@ -10,8 +10,13 @@ const Index = () => {
   const [data, setData] = useState<any[] | null>(null);
 
   const handleFileUploaded = (processedData: any[]) => {
+    console.log("📊 Recibiendo datos procesados en Index:", processedData.length, "registros");
+    
+    // Verificación de las impresiones totales
+    const totalImpressions = processedData.reduce((sum, item) => sum + (item.impressions || 0), 0);
+    console.log("📊 TOTAL IMPRESIONES EN INDEX:", totalImpressions);
+    
     setData(processedData);
-    console.log('Data processed:', processedData);
   };
 
   const mentorUrl = 'https://chatgpt.com/g/g-67e28bab27048191943a7bd55b84f667-mentor-de-campanas-coonic';
