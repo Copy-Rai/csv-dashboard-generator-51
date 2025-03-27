@@ -81,6 +81,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
         
         try {
           // Intentar procesar el CSV con nuestra función mejorada
+          setProcessingStatus("Procesando formato europeo (punto y coma como delimitador, coma como decimal)...");
           data = processCSV(text);
           
           // Filtrar y limpiar los datos
@@ -101,6 +102,10 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
           )) {
             setHasWarnings(true);
           }
+          
+          // Registro de datos procesados para verificación
+          console.log("Datos procesados (primeros 3 registros):", data.slice(0, 3));
+          console.log("Total de registros procesados:", data.length);
           
         } catch (processingError) {
           console.error("Error con el procesamiento:", processingError);
@@ -208,7 +213,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
             <div className="mt-4 px-4 py-2 bg-muted rounded-md flex items-center max-w-md">
               <AlertCircle className="w-4 h-4 text-muted-foreground mr-2 flex-shrink-0" />
               <p className="text-xs text-muted-foreground">
-                El sistema detectará automáticamente el formato (CSV, TSV) y las columnas necesarias para el análisis de tus campañas
+                Compatible con formato europeo (punto y coma como delimitador, coma como decimal). El sistema detectará automáticamente el formato.
               </p>
             </div>
           </>

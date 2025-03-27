@@ -67,17 +67,17 @@ export const processCSV = (csvContent: string): CampaignData[] => {
     // Map column variations to standardized field names - Ampliado con más variaciones en varios idiomas
     const fieldMappings: Record<string, string[]> = {
       platform: ['platform', 'plataforma', 'red', 'red social', 'source', 'origen', 'canal', 'fuente', 'media source', 'publisher', 'publisher_platform', 'ad_network', 'network'],
-      campaign_name: ['campaign', 'campaign_name', 'campaña', 'nombre_campaña', 'nombre campaña', 'nombre de campaña', 'campaign name', 'ad_name', 'ad name', 'adset', 'adset_name', 'campaign_name', 'campana'],
-      date: ['date', 'fecha', 'day', 'día', 'mes', 'month', 'reporting_start', 'fecha_inicio', 'reporting_end', 'time', 'periodo'],
+      campaign_name: ['campaign', 'campaign_name', 'campaña', 'nombre_campaña', 'nombre campaña', 'nombre de campaña', 'campaign name', 'ad_name', 'ad name', 'adset', 'adset_name', 'campaign_name', 'campana', 'conjunto de anuncios', 'nombre del conjunto de anuncios'],
+      date: ['date', 'fecha', 'day', 'día', 'mes', 'month', 'reporting_start', 'fecha_inicio', 'reporting_end', 'time', 'periodo', 'fecha de inicio', 'fecha de finalizacion'],
       impressions: ['impressions', 'impresiones', 'impr', 'impres', 'views', 'vistas', 'imprs', 'impression', 'alcance', 'reach', 'viewability', 'impressions_total', 'impresiones_totales', 'shown', 'displays'],
-      clicks: ['clicks', 'clics', 'cliques', 'click', 'clic', 'pulsaciones', 'click_total', 'link clicks', 'link_clicks', 'outbound clicks', 'outbound_clicks', 'all_clicks', 'total_clicks'],
+      clicks: ['clicks', 'clics', 'cliques', 'click', 'clic', 'pulsaciones', 'click_total', 'link clicks', 'link_clicks', 'outbound clicks', 'outbound_clicks', 'all_clicks', 'total_clicks', 'clics en el enlace', 'clics de enlace'],
       conversions: ['conversions', 'conversiones', 'conv', 'converts', 'convs', 'results', 'resultados', 'outcomes', 'purchase', 'compras', 'acquisition', 'adquisiciones', 'leads', 'registros', 'sign_ups', 'leads_form', 'registrations', 'app_install', 'install', 'instalaciones', 'actions', 'complete_registration'],
-      cost: ['cost', 'costo', 'coste', 'gasto', 'spend', 'gastos', 'inversión', 'inversion', 'amount_spent', 'money_spent', 'importe_gastado', 'budget', 'presupuesto', 'costo_total', 'gasto_total'],
-      revenue: ['revenue', 'ingresos', 'revenue', 'income', 'ganancia', 'ganancias', 'ingreso', 'purchases_value', 'purchase_value', 'valor_compra', 'sales_amount', 'sales', 'ventas', 'sales_revenue', 'purchases', 'conversion_value', 'valor_conversion', 'revenue_total', 'valor_total', 'return', 'total_revenue'],
-      ctr: ['ctr', 'click_through_rate', 'click through rate', 'tasa_clics', 'tasa de clics', 'ratio_clicks', 'porcentaje_clics'],
-      cpc: ['cpc', 'cost_per_click', 'cost per click', 'coste_por_clic', 'coste por clic', 'costo_por_clic', 'cpc_medio', 'average_cpc'],
-      cpm: ['cpm', 'cost_per_1000_impression', 'cost per thousand', 'coste_por_mil', 'coste por mil impresiones', 'costo_por_mil', 'cpm_medio', 'average_cpm'],
-      roi: ['roi', 'return_on_investment', 'return on investment', 'retorno_inversion', 'retorno de inversión', 'roas', 'return_on_ad_spend']
+      cost: ['cost', 'costo', 'coste', 'gasto', 'spend', 'gastos', 'inversión', 'inversion', 'amount_spent', 'money_spent', 'importe_gastado', 'budget', 'presupuesto', 'costo_total', 'gasto_total', 'importe gastado (eur)', 'importe gastado', 'coste (eur)', 'coste (usd)'],
+      revenue: ['revenue', 'ingresos', 'revenue', 'income', 'ganancia', 'ganancias', 'ingreso', 'purchases_value', 'purchase_value', 'valor_compra', 'sales_amount', 'sales', 'ventas', 'sales_revenue', 'purchases', 'conversion_value', 'valor_conversion', 'revenue_total', 'valor_total', 'return', 'total_revenue', 'valor de conversion'],
+      ctr: ['ctr', 'click_through_rate', 'click through rate', 'tasa_clics', 'tasa de clics', 'ratio_clicks', 'porcentaje_clics', 'porcentaje de clics en el enlace'],
+      cpc: ['cpc', 'cost_per_click', 'cost per click', 'coste_por_clic', 'coste por clic', 'costo_por_clic', 'cpc_medio', 'average_cpc', 'costo por clic (eur)', 'costo por resultado (eur)'],
+      cpm: ['cpm', 'cost_per_1000_impression', 'cost per thousand', 'coste_por_mil', 'coste por mil impresiones', 'costo_por_mil', 'cpm_medio', 'average_cpm', 'costo por 1000 impresiones mostradas (eur)'],
+      roi: ['roi', 'return_on_investment', 'return on investment', 'retorno_inversion', 'retorno de inversión', 'roas', 'return_on_ad_spend', 'retorno de la inversion publicitaria']
     };
     
     // Enhanced column detection - find indices of all possible variations
@@ -200,9 +200,35 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
     // Conversión de datos a números con manejo de formatos internacionales
     const parseNumeric = (value: string | undefined): number => {
       if (!value) return 0;
-      // Manejar formatos europeos (coma como decimal) y limpiar cualquier símbolo de moneda
-      let cleaned = value.replace(/[€$,%]/g, '').replace(/\./g, '').replace(',', '.');
-      return parseFloat(cleaned) || 0;
+      
+      // IMPORTANTE: Para formato europeo con coma como decimal
+      let cleaned = value.replace(/[€$%]/g, '').trim();
+      
+      // Si contiene un punto como separador de miles y una coma como decimal
+      if (cleaned.includes('.') && cleaned.includes(',')) {
+        // Formato europeo: eliminar puntos y reemplazar comas por puntos
+        cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+      } 
+      // Si solo contiene coma (decimal europeo)
+      else if (cleaned.includes(',') && !cleaned.includes('.')) {
+        cleaned = cleaned.replace(',', '.');
+      }
+      
+      // Convertir a número
+      const num = parseFloat(cleaned);
+      
+      // Verificar si el valor es extremadamente grande (posible error)
+      if (num > 1000000 && columnMap.cost !== undefined && values[columnMap.cost] === value) {
+        // Si es un valor de costo y es muy grande, podría estar en céntimos o con error de interpretación
+        console.warn(`Valor muy grande detectado: ${value} -> ${num}. Verificando si necesita ajuste.`);
+        
+        // Si parece estar en céntimos, convertir a euros
+        if (num > 1000000 && num < 1000000000) {
+          return num / 100;
+        }
+      }
+      
+      return isNaN(num) ? 0 : num;
     };
     
     // Extracción de métricas principales
