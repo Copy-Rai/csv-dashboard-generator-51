@@ -16,7 +16,7 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ data }) => {
   // Efecto para verificar los datos cuando el componente carga
   useEffect(() => {
-    console.log("🔄 DASHBOARD RECARGADO - VERSIÓN: 3.0.0");
+    console.log("🔄 DASHBOARD RECARGADO - VERSIÓN RESTAURADA");
     console.log("📊 Datos recibidos:", data.length, "registros");
     
     // Imprimir impresiones por cada registro para verificar el total
@@ -41,7 +41,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
   }, [data]);
 
   const calculateMetrics = () => {
-    console.log("⚙️ RECALCULANDO MÉTRICAS - VERSIÓN: 3.0.0");
+    console.log("⚙️ RECALCULANDO MÉTRICAS - VERSIÓN RESTAURADA");
     console.log("📊 Calculando métricas con", data.length, "registros");
     
     // Mostrar contenido de algunos registros para verificación
@@ -79,29 +79,14 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       return 0;
     };
     
-    // Inicializamos acumuladores para depuración
-    let acumulador = 0;
-    let registrosContados = 0;
-    let registrosExcluidos = 0;
-    
     // Calcular totales sumando todos los registros sin excepciones
     const totalImpressions = data.reduce((sum, item, index) => {
       // Convertimos el valor a número de forma segura
       const impressions = ensureNumber(item.impressions);
       
-      // Acumulamos para depuración
-      acumulador += impressions;
-      
-      // Registramos si estamos contando o excluyendo este registro
-      if (impressions > 0) {
-        registrosContados++;
-      } else {
-        registrosExcluidos++;
-      }
-      
       // Log para cada campaña con muchas impresiones para verificar
       if (impressions > 5000 || index < 5 || index % 100 === 0) {
-        console.log(`📝 [${index}] ${item.campaign_name || "Sin nombre"}: ${impressions} impresiones (Acumulado: ${acumulador})`);
+        console.log(`📝 [${index}] ${item.campaign_name || "Sin nombre"}: ${impressions} impresiones`);
       }
       
       return sum + impressions;
@@ -109,7 +94,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
     
     // Log para verificar las impresiones totales después de procesar
     console.log("📊 Impresiones totales después de procesar:", totalImpressions);
-    console.log(`📊 Estadísticas: ${registrosContados} registros con impresiones, ${registrosExcluidos} sin impresiones`);
     
     // Preferimos link_clicks cuando está disponible
     const totalClicks = data.reduce((sum, item) => {
@@ -319,7 +303,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
               className="bg-primary hover:bg-primary/80 text-white shadow-md px-6 py-6 font-medium"
               size="lg"
             >
-              <MessageCircle className="mr-2 h-5 w-5" /> 🧠💬 Habla con tu mentor
+              <MessageCircle className="mr-2 h-5 w-5" /> ��💬 Habla con tu mentor
             </Button>
           </CardContent>
         </Card>

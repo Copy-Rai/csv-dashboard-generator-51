@@ -1,3 +1,4 @@
+
 interface CampaignData {
   platform: string;
   campaign_name?: string;
@@ -34,53 +35,11 @@ const detectDelimiter = (csvContent: string): string => {
   const semicolonCount = (firstLine.match(/;/g) || []).length;
   const tabCount = (firstLine.match(/\t/g) || []).length;
   
-  console.log(`⚙️ Delimitadores detectados: , (${commaCount}), ; (${semicolonCount}), \\t (${tabCount})`);
-  
-  // Análisis adicional de todas las líneas de muestra
-  let bestDelimiter = '';
-  let highestConsistency = -1;
-  
-  // Para cada delimitador, verificamos la consistencia en el número de campos
-  for (const delimiter of [',', ';', '\t']) {
-    let consistencyScore = 0;
-    let prevFieldCount = -1;
-    
-    for (const line of lines) {
-      if (line.trim() === '') continue;
-      
-      const fieldCount = line.split(delimiter).length;
-      
-      // Si ya procesamos una línea anterior, comparamos
-      if (prevFieldCount !== -1) {
-        // Aumentamos la consistencia si el número de campos es igual
-        if (fieldCount === prevFieldCount) {
-          consistencyScore++;
-        }
-      }
-      
-      prevFieldCount = fieldCount;
-    }
-    
-    console.log(`⚙️ Consistencia para delimitador "${delimiter === '\t' ? '\\t' : delimiter}": ${consistencyScore}`);
-    
-    // Si este delimitador tiene mejor consistencia, lo seleccionamos
-    if (consistencyScore > highestConsistency) {
-      highestConsistency = consistencyScore;
-      bestDelimiter = delimiter;
-    }
-  }
-  
-  // Si la consistencia no es clara, usamos la heurística original
-  if (highestConsistency <= 0) {
-    // Preferimos punto y coma cuando hay más o igual cantidad que comas
-    // ya que con formato europeo, las comas pueden estar en los números
-    if (semicolonCount >= 1) return ';';
-    if (tabCount > commaCount) return '\t';
-    return ',';
-  }
-  
-  console.log(`⚙️ Mejor delimitador por consistencia: "${bestDelimiter === '\t' ? '\\t' : bestDelimiter}"`);
-  return bestDelimiter;
+  // Preferimos punto y coma cuando hay más o igual cantidad que comas
+  // ya que con formato europeo, las comas pueden estar en los números
+  if (semicolonCount >= 1) return ';';
+  if (tabCount > commaCount) return '\t';
+  return ',';
 };
 
 // Función para normalizar texto removiendo acentos
@@ -88,53 +47,12 @@ const normalizeText = (text: string): string => {
   return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 };
 
-// Parse numérico mejorado con manejo específico para formato europeo
-const parseEuropeanNumeric = (value: string | undefined): number => {
-  if (!value) return 0;
-  
-  // Limpiamos el valor de símbolos de moneda y otros caracteres no numéricos
-  let cleaned = value.replace(/[€$%]/g, '').trim();
-  
-  // Verificación de depuración para valores grandes
-  const originalValue = cleaned;
-  
-  // Formato europeo: la coma es el separador decimal
-  // Si contiene punto, asumimos que es separador de miles
-  if (cleaned.includes('.') && cleaned.includes(',')) {
-    // Formato europeo con separador de miles: quitar puntos y reemplazar coma por punto
-    cleaned = cleaned.replace(/\./g, '').replace(',', '.');
-  } 
-  // Si solo contiene coma como posible decimal
-  else if (cleaned.includes(',') && !cleaned.includes('.')) {
-    cleaned = cleaned.replace(',', '.');
-  }
-  
-  // Convertir a número
-  const num = parseFloat(cleaned);
-  
-  // Verificación especial para valores grandes
-  if (num > 10000) {
-    console.log(`🔢 Parseando valor grande: "${originalValue}" -> ${num}`);
-  }
-  
-  // Si no es un número válido, devolver 0
-  if (isNaN(num)) {
-    console.warn(`⚠️ Valor no numérico detectado: ${value} -> ${cleaned}`);
-    return 0;
-  }
-  
-  return num;
-};
-
 // Process CSV content to structured data with enhanced flexibility
 export const processCSV = (csvContent: string): CampaignData[] => {
   try {
-    console.log("🔄 PROCESANDO CSV - VERSIÓN: 3.0.0");
-    // Conteo de líneas para verificación
-    const lineCount = csvContent.split('\n').length;
-    console.log(`📋 Archivo CSV recibido con ${lineCount} líneas`);
+    console.log("🔄 PROCESANDO CSV - VERSIÓN RESTAURADA");
     
-    // Detectamos el delimitador automáticamente, preferentemente para formato europeo
+    // Detectamos el delimitador automáticamente
     const delimiter = detectDelimiter(csvContent);
     console.log(`🔧 Delimitador seleccionado: "${delimiter}"`);
     
@@ -149,25 +67,25 @@ export const processCSV = (csvContent: string): CampaignData[] => {
     
     console.log("📊 Encabezados detectados:", headers);
     
-    // Map column variations to standardized field names - Ampliado con variaciones europeas y multi-idioma
+    // Map column variations to standardized field names
     const fieldMappings: Record<string, string[]> = {
-      platform: ['platform', 'plataforma', 'red', 'red social', 'source', 'origen', 'canal', 'fuente', 'media source', 'publisher', 'publisher_platform', 'ad_network', 'network', 'delivery platform', 'plataforma de entrega'],
-      campaign_name: ['campaign', 'campaign_name', 'campaña', 'nombre_campaña', 'nombre campaña', 'nombre de campaña', 'campaign name', 'ad_name', 'ad name', 'campana', 'campaign_id', 'id de campaña', 'id campaña'],
-      ad_set_name: ['adset', 'adset_name', 'ad set name', 'ad_set_name', 'conjunto de anuncios', 'nombre del conjunto de anuncios', 'nombre del conjunto', 'adset name', 'ad set id', 'adset_id', 'conjunto'],
-      date: ['date', 'fecha', 'day', 'día', 'mes', 'month', 'reporting_start', 'fecha_inicio', 'reporting_end', 'time', 'periodo', 'fecha de inicio', 'fecha de finalizacion'],
-      impressions: ['impressions', 'impresiones', 'impr', 'impres', 'views', 'vistas', 'imprs', 'impression', 'alcance', 'reach', 'viewability', 'impressions_total', 'impresiones_totales', 'shown', 'displays', 'impresiones mostradas'],
-      clicks: ['clicks', 'clics', 'cliques', 'click', 'clic', 'pulsaciones', 'click_total', 'all_clicks', 'total_clicks', 'clicks_all', 'total de clics'],
-      link_clicks: ['link clicks', 'link_clicks', 'outbound clicks', 'outbound_clicks', 'clics en el enlace', 'clics de enlace', 'clics en enlaces', 'clics totales en el enlace'],
-      conversions: ['conversions', 'conversiones', 'conv', 'converts', 'convs', 'results', 'resultados', 'outcomes', 'purchase', 'compras', 'acquisition', 'adquisiciones', 'leads', 'registros', 'sign_ups', 'leads_form', 'registrations', 'app_install', 'install', 'instalaciones', 'actions', 'complete_registration'],
-      cost: ['cost', 'costo', 'coste', 'gasto', 'spend', 'gastos', 'inversión', 'inversion', 'budget', 'presupuesto', 'costo_total', 'gasto_total'],
-      amount_spent_eur: ['amount_spent', 'money_spent', 'importe_gastado', 'importe gastado (eur)', 'importe gastado', 'coste (eur)', 'coste (usd)', 'amount spent (eur)', 'amount spent (€)', 'importe invertido (eur)', 'importe (eur)'],
-      revenue: ['revenue', 'ingresos', 'revenue', 'income', 'ganancia', 'ganancias', 'ingreso', 'purchases_value', 'purchase_value', 'valor_compra', 'sales_amount', 'sales', 'ventas', 'sales_revenue', 'purchases', 'conversion_value', 'valor_conversion', 'revenue_total', 'valor_total', 'return', 'total_revenue', 'valor de conversion'],
-      ctr: ['ctr', 'click_through_rate', 'click through rate', 'tasa_clics', 'tasa de clics', 'ratio_clicks', 'porcentaje_clics', 'porcentaje de clics en el enlace', 'ctr (all)', 'ctr (porcentaje de clics en el enlace)'],
-      cpc: ['cpc', 'cost_per_click', 'cost per click', 'coste_por_clic', 'coste por clic', 'costo_por_clic', 'cpc_medio', 'average_cpc', 'costo por clic (eur)', 'costo por resultado (eur)', 'cost per link click (€)', 'costo por clic en el enlace (€)', 'cpc (costo por clic en el enlace) (eur)'],
-      cpm: ['cpm', 'cost_per_1000_impression', 'cost per thousand', 'coste_por_mil', 'coste por mil impresiones', 'costo_por_mil', 'cpm_medio', 'average_cpm', 'costo por 1000 impresiones mostradas (eur)', 'cpm (cost per 1,000 impressions)', 'cpm (costo por 1.000 impresiones)', 'cpm (costo por mil impresiones) (eur)']
+      platform: ['platform', 'plataforma', 'red', 'red social', 'source', 'origen', 'canal', 'fuente', 'media source'],
+      campaign_name: ['campaign', 'campaign_name', 'campaña', 'nombre_campaña', 'nombre campaña', 'nombre de campaña', 'campaign name'],
+      ad_set_name: ['adset', 'adset_name', 'ad set name', 'ad_set_name', 'conjunto de anuncios', 'nombre del conjunto'],
+      date: ['date', 'fecha', 'day', 'día', 'mes', 'month', 'reporting_start', 'fecha_inicio', 'reporting_end'],
+      impressions: ['impressions', 'impresiones', 'impr', 'impres', 'views', 'vistas', 'imprs', 'impression'],
+      clicks: ['clicks', 'clics', 'cliques', 'click', 'clic', 'pulsaciones', 'click_total', 'all_clicks'],
+      link_clicks: ['link clicks', 'link_clicks', 'outbound clicks', 'outbound_clicks', 'clics en el enlace'],
+      conversions: ['conversions', 'conversiones', 'conv', 'converts', 'convs', 'results', 'resultados', 'outcomes'],
+      cost: ['cost', 'costo', 'coste', 'gasto', 'spend', 'gastos', 'inversión', 'inversion', 'budget', 'presupuesto'],
+      amount_spent_eur: ['amount_spent', 'money_spent', 'importe_gastado', 'importe gastado (eur)', 'importe gastado'],
+      revenue: ['revenue', 'ingresos', 'revenue', 'income', 'ganancia', 'ganancias', 'ingreso', 'purchases_value'],
+      ctr: ['ctr', 'click_through_rate', 'click through rate', 'tasa_clics', 'tasa de clics', 'ratio_clicks'],
+      cpc: ['cpc', 'cost_per_click', 'cost per click', 'coste_por_clic', 'coste por clic', 'costo_por_clic'],
+      cpm: ['cpm', 'cost_per_1000_impression', 'cost per thousand', 'coste_por_mil', 'coste por mil', 'costo_por_mil']
     };
     
-    // Enhanced column detection - find indices of all possible variations
+    // Find indices of all possible field variations
     const columnMap: Record<string, number> = {};
     
     // First try exact matches, then fuzzy matches
@@ -184,327 +102,264 @@ export const processCSV = (csvContent: string): CampaignData[] => {
         );
       }
       
-      // Última oportunidad: buscar coincidencias parciales en ambas direcciones
-      if (foundIndex === -1) {
-        foundIndex = headers.findIndex(header => 
-          variations.some(variation => 
-            normalizeText(variation).includes(header) || header.includes(normalizeText(variation).substring(0, 3))
-          )
-        );
-      }
-      
       if (foundIndex !== -1) {
         columnMap[standardField] = foundIndex;
-        console.log(`Campo '${standardField}' encontrado en columna: "${headers[foundIndex]}"`);
-      } else {
-        console.log(`⚠️ No se encontró columna para '${standardField}'`);
       }
     }
     
-    console.log("Mapeo final de columnas:", columnMap);
-    
-    // Si no encontramos la plataforma, asignamos Meta/Facebook por defecto para archivos de Meta Ads
+    // If platform is not found, assume Meta/Facebook for Meta Ads files
     if (columnMap.platform === undefined) {
-      console.log("🔍 No se encontró columna para 'platform', asumiendo Meta/Facebook");
+      console.log("No platform column found, assuming Meta/Facebook");
       
-      // Intentamos detectar si es de Meta/Facebook por los nombres de columnas
+      // Try to detect if it's Meta/Facebook by column names
       const metaSpecificColumns = ['adset_name', 'delivery_platform', 'clics en el enlace', 'importe gastado (eur)'];
       let isMeta = headers.some(header => 
         metaSpecificColumns.some(col => header.includes(normalizeText(col)))
       );
       
       if (isMeta) {
-        console.log("✅ Detectado archivo de Meta Ads por nombres de columnas específicos");
+        console.log("Detected Meta Ads file by specific column names");
       }
     }
     
-    // Necesitamos asegurarnos de que existe una columna de impresiones
-    if (columnMap.impressions === undefined) {
-      console.error("❌ No se encontró columna para 'impressions', esto es crítico");
+    console.log("🔄 Iniciando procesamiento de filas...");
+    
+    // Process each line of the CSV, starting with index 1 to skip header
+    const results: CampaignData[] = [];
+    let rowsProcessed = 0;
+    let rowsSkipped = 0;
+    let totalImpressions = 0;
+    
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) {
+        rowsSkipped++;
+        continue;
+      }
       
-      // Intentemos hacer una búsqueda más agresiva
-      const possibleImpressionColumns = headers.map((header, index) => ({ 
-        header, 
-        index,
-        score: header.includes('impr') || header.includes('view') ? 5 : 
-               header.includes('most') || header.includes('vista') ? 3 : 0
-      })).filter(item => item.score > 0);
+      const values = lines[i].split(delimiter).map(value => value.trim());
       
-      if (possibleImpressionColumns.length > 0) {
-        // Usamos la columna con mayor puntuación
-        possibleImpressionColumns.sort((a, b) => b.score - a.score);
-        columnMap.impressions = possibleImpressionColumns[0].index;
-        console.log(`⚠️ Usando columna alternativa para impresiones: "${headers[columnMap.impressions]}"`);
-      } else {
-        console.error("❌ No se pudo encontrar ninguna columna para impresiones, el procesamiento podría fallar");
+      // Skip rows that are too short (badly formatted)
+      if (values.length < 3) {
+        console.warn(`⚠️ Saltando fila ${i} por tener menos de 3 valores`);
+        rowsSkipped++;
+        continue;
+      }
+
+      // Extract platform - if not found, use Meta/Facebook as default for Meta Ads files
+      let platform = "Meta";
+      if (columnMap.platform !== undefined && values[columnMap.platform]) {
+        platform = values[columnMap.platform];
+        
+        // Clean up platform name
+        const platformMap: Record<string, string> = {
+          'fb': 'Facebook',
+          'facebook': 'Facebook',
+          'facebook ads': 'Facebook',
+          'meta': 'Meta',
+          'instagram': 'Instagram',
+          'ig': 'Instagram',
+          'google': 'Google Ads',
+          'google ads': 'Google Ads',
+          'twitter': 'Twitter',
+          'twitter ads': 'Twitter'
+        };
+        
+        // Normalize platform name
+        const normalizedPlatform = normalizeText(platform);
+        for (const [key, value] of Object.entries(platformMap)) {
+          if (normalizedPlatform.includes(key)) {
+            platform = value;
+            break;
+          }
+        }
+      }
+      
+      // Extract metrics with improved parsing to handle European number format
+      // In European format, comma is used as decimal separator
+      const parseEuropeanNumeric = (value: string | undefined): number => {
+        if (!value) return 0;
+        
+        // Clean the value of currency symbols and other non-numeric characters
+        let cleaned = value.replace(/[€$%]/g, '').trim();
+        
+        // European format: comma is decimal separator
+        // If contains comma and also period, assume period is thousand separator
+        if (cleaned.includes(',') && cleaned.includes('.')) {
+          // European format with thousand separator: remove periods and replace comma with period
+          cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+        } 
+        // If only contains comma as possible decimal
+        else if (cleaned.includes(',') && !cleaned.includes('.')) {
+          cleaned = cleaned.replace(',', '.');
+        }
+        
+        // Convert to number
+        const num = parseFloat(cleaned);
+        
+        // If not a valid number, return 0
+        if (isNaN(num)) {
+          return 0;
+        }
+        
+        return num;
+      };
+      
+      // Extract impressions with improved parsing for European number format
+      const impressions = columnMap.impressions !== undefined 
+        ? parseEuropeanNumeric(values[columnMap.impressions])
+        : 0;
+        
+      // For debugging, log the impression value
+      if (impressions > 100000) {
+        console.log(`Fila ${i}: ${impressions} impresiones. Original: "${values[columnMap.impressions]}"`);
+      }
+      
+      // Accumulate total impressions for verification
+      totalImpressions += impressions;
+      
+      // Extract clicks with improved parsing
+      const rawClicks = columnMap.clicks !== undefined 
+        ? parseEuropeanNumeric(values[columnMap.clicks]) 
+        : 0;
+      const linkClicks = columnMap.link_clicks !== undefined 
+        ? parseEuropeanNumeric(values[columnMap.link_clicks]) 
+        : 0;
+      
+      // Prefer link_clicks when available
+      const clicks = linkClicks > 0 ? linkClicks : rawClicks;
+      
+      // Extract conversions
+      const conversions = columnMap.conversions !== undefined 
+        ? parseEuropeanNumeric(values[columnMap.conversions]) 
+        : 0;
+      
+      // Prefer amount_spent_eur when available (more specific)
+      const amountSpentEur = columnMap.amount_spent_eur !== undefined 
+        ? parseEuropeanNumeric(values[columnMap.amount_spent_eur]) 
+        : 0;
+      const generalCost = columnMap.cost !== undefined 
+        ? parseEuropeanNumeric(values[columnMap.cost]) 
+        : 0;
+      
+      // Use the most specific cost available
+      const cost = amountSpentEur > 0 ? amountSpentEur : generalCost;
+      
+      // Extract revenue, or if not available, calculate with estimated conversion value
+      let revenue = columnMap.revenue !== undefined 
+        ? parseEuropeanNumeric(values[columnMap.revenue]) 
+        : 0;
+      
+      if (revenue === 0 && conversions > 0) {
+        // Default estimated value per conversion
+        const estimatedValuePerConversion = 30;
+        revenue = conversions * estimatedValuePerConversion;
+      }
+      
+      // Extract or calculate derived metrics
+      let ctr = columnMap.ctr !== undefined 
+        ? parseEuropeanNumeric(values[columnMap.ctr]) 
+        : undefined;
+        
+      let cpc = columnMap.cpc !== undefined 
+        ? parseEuropeanNumeric(values[columnMap.cpc]) 
+        : undefined;
+        
+      let cpm = columnMap.cpm !== undefined 
+        ? parseEuropeanNumeric(values[columnMap.cpm]) 
+        : undefined;
+      
+      // Calculate derived metrics if not available
+      if (ctr === undefined && impressions > 0) {
+        ctr = (clicks / impressions) * 100;
+      }
+      
+      if (cpc === undefined && clicks > 0) {
+        cpc = cost / clicks;
+      }
+      
+      if (cpm === undefined && impressions > 0) {
+        cpm = (cost / impressions) * 1000;
+      }
+      
+      // Calculate ROI
+      const roi = cost > 0 ? ((revenue - cost) / cost) * 100 : 0;
+      
+      // Create campaign data object with metrics
+      const campaignData: CampaignData = {
+        platform,
+        campaign_name: columnMap.campaign_name !== undefined ? values[columnMap.campaign_name] : undefined,
+        ad_set_name: columnMap.ad_set_name !== undefined ? values[columnMap.ad_set_name] : undefined,
+        date: columnMap.date !== undefined ? values[columnMap.date] : undefined,
+        impressions,
+        clicks,
+        link_clicks: linkClicks,
+        conversions,
+        cost,
+        amount_spent_eur: amountSpentEur,
+        revenue,
+        ctr,
+        cpc,
+        cpm,
+        roi
+      };
+      
+      results.push(campaignData);
+      rowsProcessed++;
+      
+      // Log progress periodically
+      if (i % 100 === 0 || i === lines.length - 1) {
+        console.log(`Progreso: ${i}/${lines.length-1} filas procesadas. Impresiones hasta ahora: ${totalImpressions}`);
       }
     }
     
-    console.log("📊 Iniciando procesamiento de filas...");
-    const results = processWithDelimiter(lines, columnMap, delimiter);
+    // Log statistics for debugging
+    console.log(`Filas procesadas: ${rowsProcessed}, Filas omitidas: ${rowsSkipped}`);
+    console.log(`Total de impresiones encontradas: ${totalImpressions}`);
     
-    // Verificación final de datos procesados
-    const totalImpressions = results.reduce((sum, item) => sum + (item.impressions || 0), 0);
-    console.log(`📊 TOTAL IMPRESIONES TRAS PROCESAMIENTO COMPLETO: ${totalImpressions}`);
+    // Log total impressions for verification
+    const verifiedTotalImpressions = results.reduce((sum, item) => sum + item.impressions, 0);
+    console.log(`Verificación: Total de impresiones en resultados: ${verifiedTotalImpressions}`);
     
     return results;
   } catch (error) {
-    console.error("❌ Error parsing CSV:", error);
+    console.error("Error parsing CSV:", error);
     throw new Error("Error processing CSV data. Please check the format.");
   }
 };
 
-// Helper function to process with a specific delimiter
-function processWithDelimiter(lines: string[], columnMap: Record<string, number>, delimiter: string): CampaignData[] {
-  console.log("🔄 Iniciando procesamiento con delimitador:", delimiter);
-  console.log("🗺️ Usando mapa de columnas:", columnMap);
-  
-  const results: CampaignData[] = [];
-  
-  // Contador para depuración
-  let rowsProcessed = 0;
-  let rowsSkipped = 0;
-  let emptyDataRows = 0;
-  let totalImpressionsFound = 0;
-  let impRowCount = 0;
-  
-  // Process each line of the CSV, starting with index 1 to skip header
-  for (let i = 1; i < lines.length; i++) {
-    if (!lines[i].trim()) {
-      rowsSkipped++;
-      continue;
-    }
-    
-    const values = lines[i].split(delimiter).map(value => value.trim());
-    
-    // Si la línea tiene muy pocos valores, probablemente está mal formateada
-    if (values.length < 3) {
-      console.warn(`⚠️ Saltando fila ${i} por tener menos de 3 valores`);
-      rowsSkipped++;
-      continue;
-    }
-
-    // Extract platform - if still not found, use Meta/Facebook as default for Meta Ads files
-    let platform = "Meta";
-    if (columnMap.platform !== undefined && values[columnMap.platform]) {
-      platform = values[columnMap.platform];
-      
-      // Clean up platform name
-      const platformMap: Record<string, string> = {
-        'fb': 'Facebook',
-        'facebook': 'Facebook',
-        'facebook ads': 'Facebook',
-        'meta': 'Meta',
-        'instagram': 'Instagram',
-        'ig': 'Instagram',
-        'google': 'Google Ads',
-        'google ads': 'Google Ads',
-        'twitter': 'X',
-        'twitter ads': 'X',
-        'x': 'X'
-      };
-      
-      // Normalizar el nombre de la plataforma
-      const normalizedPlatform = normalizeText(platform);
-      for (const [key, value] of Object.entries(platformMap)) {
-        if (normalizedPlatform.includes(key)) {
-          platform = value;
-          break;
-        }
-      }
-    }
-    
-    // Extraer el posible estado de la campaña - solo para registro, NO para filtrar
-    let campaignStatus = "";
-    if (columnMap.campaign_name !== undefined && values[columnMap.campaign_name]) {
-      const campaignName = values[columnMap.campaign_name].toLowerCase();
-      if (campaignName.includes("completed") || campaignName.includes("active") || 
-          campaignName.includes("inactive") || campaignName.includes("recently")) {
-        campaignStatus = campaignName.includes("completed") ? "completed" : 
-                         campaignName.includes("active") ? "active" : 
-                         campaignName.includes("recently") ? "recently_completed" : "inactive";
-      }
-    }
-    
-    // Extracting metrics with improved European number parsing
-    let impressions = 0;
-    if (columnMap.impressions !== undefined) {
-      // Obtenemos el valor si existe
-      if (values[columnMap.impressions] !== undefined) {
-        // Parseamos el valor con el método mejorado
-        impressions = parseEuropeanNumeric(values[columnMap.impressions]);
-        
-        // DEBUG para encontrar valores grandes
-        if (impressions > 10000) {
-          console.log(`🔍 Fila ${i} con muchas impresiones (${impressions}): "${values[columnMap.impressions]}"`);
-        }
-        
-        // Incrementamos el contador
-        if (impressions > 0) {
-          impRowCount++;
-        }
-        
-        totalImpressionsFound += impressions;
-      } else {
-        console.warn(`⚠️ Fila ${i}: No hay valor para impresiones en la columna ${columnMap.impressions}`);
-      }
-    } else {
-      console.warn(`⚠️ Fila ${i}: No se encontró columna para impresiones`);
-    }
-    
-    // Si es uno de los primeros 5 registros o un múltiplo de 10, mostrar detalle
-    if (i <= 5 || i % 20 === 0 || impressions > 10000) {
-      console.log(`📝 Fila ${i}: encontradas ${impressions} impresiones. Valor original: "${values[columnMap.impressions]}"`);
-    }
-    
-    const rawClicks = columnMap.clicks !== undefined ? parseEuropeanNumeric(values[columnMap.clicks]) : 0;
-    const linkClicks = columnMap.link_clicks !== undefined ? parseEuropeanNumeric(values[columnMap.link_clicks]) : 0;
-    const clicks = linkClicks > 0 ? linkClicks : rawClicks; // Prefer link_clicks when available
-    
-    const conversions = columnMap.conversions !== undefined ? parseEuropeanNumeric(values[columnMap.conversions]) : 0;
-    
-    // Para cost, preferimos amount_spent_eur cuando está disponible (más específico)
-    const amountSpentEur = columnMap.amount_spent_eur !== undefined ? parseEuropeanNumeric(values[columnMap.amount_spent_eur]) : 0;
-    const generalCost = columnMap.cost !== undefined ? parseEuropeanNumeric(values[columnMap.cost]) : 0;
-    const cost = amountSpentEur > 0 ? amountSpentEur : generalCost;
-    
-    // Para revenue, si no está explícito, lo calculamos con un valor estimado por conversión
-    let revenue = columnMap.revenue !== undefined ? parseEuropeanNumeric(values[columnMap.revenue]) : 0;
-    if (revenue === 0 && conversions > 0) {
-      // Valor estimado de conversión (esto es un estimado básico, idealmente se configuraría)
-      const estimatedValuePerConversion = 30; // Valor predeterminado por conversión
-      revenue = conversions * estimatedValuePerConversion;
-    }
-    
-    // Extract or calculate derived metrics with European number parsing
-    let ctr = columnMap.ctr !== undefined ? parseEuropeanNumeric(values[columnMap.ctr]) : undefined;
-    let cpc = columnMap.cpc !== undefined ? parseEuropeanNumeric(values[columnMap.cpc]) : undefined;
-    let cpm = columnMap.cpm !== undefined ? parseEuropeanNumeric(values[columnMap.cpm]) : undefined;
-    
-    // Calculate derived metrics if not available
-    if (ctr === undefined && impressions > 0) {
-      ctr = (clicks / impressions) * 100;
-    }
-    
-    if (cpc === undefined && clicks > 0) {
-      cpc = cost / clicks;
-    }
-    
-    if (cpm === undefined && impressions > 0) {
-      cpm = (cost / impressions) * 1000;
-    }
-    
-    // Calculate ROI
-    const roi = cost > 0 ? ((revenue - cost) / cost) * 100 : 0;
-    
-    // IMPORTANTE: Incluimos TODOS los registros sin filtrar por estado u otras condiciones
-    // Campaign data object with metrics
-    const campaignData: CampaignData = {
-      platform,
-      campaign_name: columnMap.campaign_name !== undefined ? values[columnMap.campaign_name] : undefined,
-      ad_set_name: columnMap.ad_set_name !== undefined ? values[columnMap.ad_set_name] : undefined,
-      date: columnMap.date !== undefined ? values[columnMap.date] : undefined,
-      impressions,
-      clicks,
-      link_clicks: linkClicks,
-      conversions,
-      cost,
-      amount_spent_eur: amountSpentEur,
-      revenue,
-      ctr,
-      cpc,
-      cpm,
-      roi,
-      status: campaignStatus // Guardamos el estado solo para referencia
-    };
-    
-    results.push(campaignData);
-    rowsProcessed++;
-    
-    // Log periódico del progreso
-    if (i % 20 === 0 || i === lines.length - 1) {
-      console.log(`🔄 Progreso: ${i}/${lines.length-1} filas procesadas. Total impresiones hasta ahora: ${totalImpressionsFound}`);
-    }
-  }
-  
-  // Log de estadísticas para depuración
-  console.log(`📊 FINALIZADO: Filas procesadas: ${rowsProcessed}, Filas omitidas: ${rowsSkipped}, Filas sin datos: ${emptyDataRows}`);
-  console.log(`📊 FINALIZADO: Total de impresiones encontradas: ${totalImpressionsFound}`);
-  console.log(`📊 FINALIZADO: Filas con impresiones > 0: ${impRowCount} de ${rowsProcessed} totales`);
-  
-  // IMPORTANTE: Verificación final de impresiones totales
-  const verifiedTotalImpressions = results.reduce((sum, item) => sum + item.impressions, 0);
-  console.log(`📊 VERIFICACIÓN FINAL: Total de impresiones en los datos procesados: ${verifiedTotalImpressions}`);
-  
-  // Verificación de que todas las filas procesadas tengan algún valor
-  const rowsWithZeroImpressions = results.filter(item => item.impressions === 0).length;
-  const rowsWithImpressions = results.filter(item => item.impressions > 0).length;
-  console.log(`📊 Filas con 0 impresiones: ${rowsWithZeroImpressions}, Filas con impresiones: ${rowsWithImpressions}`);
-  
-  return results;
-}
-
-// Clean CSV data - NUNCA filtrar por estado, incluir TODOS los registros
+// Clean CSV data - ensure all numeric values are properly formatted
 export const cleanCSVData = (data: CampaignData[]): CampaignData[] => {
-  console.log("🧹 LIMPIEZA DE DATOS - VERSIÓN: 3.0.0");
-  console.log("🧹 Total de registros antes de limpieza:", data.length);
+  console.log("🧹 Limpiando datos...");
+  console.log("Total de registros antes de limpieza:", data.length);
   
-  // Mostrar distribución por plataforma
-  const platforms = data.reduce((acc: Record<string, number>, item) => {
-    const platform = item.platform || "Unknown";
-    acc[platform] = (acc[platform] || 0) + 1;
-    return acc;
-  }, {});
-  
-  console.log("📊 Distribución por plataforma:", platforms);
-  
-  // Mostrar la suma total de impresiones antes de la limpieza para verificar
+  // Show total impressions before cleaning for verification
   const totalImpressionsBeforeCleaning = data.reduce((sum, item) => sum + item.impressions, 0);
-  console.log(`📊 Total de impresiones antes de limpieza: ${totalImpressionsBeforeCleaning}`);
+  console.log(`Total de impresiones antes de limpieza: ${totalImpressionsBeforeCleaning}`);
   
-  // Verificar si hay campañas con status específicos que tengan impresiones
-  const statusCounts: Record<string, { count: number, impressions: number }> = {};
-  data.forEach(item => {
-    const status = item.status || "sin_estado";
-    if (!statusCounts[status]) {
-      statusCounts[status] = { count: 0, impressions: 0 };
-    }
-    statusCounts[status].count++;
-    statusCounts[status].impressions += item.impressions;
-  });
-  console.log("📊 Conteo por estados:", statusCounts);
-  
-  // ¡IMPORTANTE! NO filtrar NADA, solo realizar limpieza básica
+  // Basic cleaning without filtering out any records
   const cleanedData = data.map(item => {
-    // Clean platform field if it contains semicolons or other separators
+    // Clean platform field if it contains separators
     let platform = item.platform;
     if (platform && (platform.includes(';') || platform.includes('|'))) {
       platform = platform.split(/[;|]/)[0].trim();
     }
     
+    // Ensure all numeric values are properly formatted
     return {
       ...item,
       platform,
-      // Aseguramos que impressions sea siempre un número
+      // Ensure impressions is always a number
       impressions: typeof item.impressions === 'number' ? item.impressions : 
                   item.impressions ? Number(item.impressions) : 0
     };
   });
   
-  // Mostrar la suma total de impresiones después de la limpieza para verificar
+  // Show total impressions after cleaning for verification
   const totalImpressionsAfterCleaning = cleanedData.reduce((sum, item) => sum + item.impressions, 0);
-  console.log(`📊 Total de impresiones después de limpieza: ${totalImpressionsAfterCleaning}`);
+  console.log(`Total de impresiones después de limpieza: ${totalImpressionsAfterCleaning}`);
   
-  // Log de conteo de registros después de limpieza
-  console.log("🧹 Total de registros después de limpieza:", cleanedData.length);
-  
-  // Verificación final de impresiones totales 
-  console.log(`📊 VERIFICACIÓN FINAL LIMPIEZA: Total impresiones después de limpieza: ${totalImpressionsAfterCleaning}`);
-  console.log(`📊 Diff de impresiones durante limpieza: ${totalImpressionsAfterCleaning - totalImpressionsBeforeCleaning}`);
-  
-  // Verificar cuántas filas tienen >0 impresiones
-  const impFilas = cleanedData.filter(item => item.impressions > 0).length;
-  console.log(`📊 Verificación final: De ${cleanedData.length} filas, ${impFilas} tienen impresiones > 0`);
+  // Log record count after cleaning
+  console.log("Total de registros después de limpieza:", cleanedData.length);
   
   return cleanedData;
 };
