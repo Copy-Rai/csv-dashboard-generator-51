@@ -31,6 +31,7 @@ const detectDelimiter = (csvContent: string): string => {
   }
   
   const firstLine = lines[0];
+  console.log("📋 PRIMERA LÍNEA ORIGINAL:", firstLine);
   
   // Count occurrences of each possible delimiter
   const commaCount = (firstLine.match(/,/g) || []).length;
@@ -55,14 +56,15 @@ const detectDelimiter = (csvContent: string): string => {
 const detectLanguage = (headers: string[]): string => {
   // Normalize headers for language detection
   const normalizedHeaders = headers.map(h => h.toLowerCase());
+  console.log("👁️ ENCABEZADOS ORIGINALES:", headers);
   console.log("👁️ ENCABEZADOS NORMALIZADOS PARA DETECCIÓN DE IDIOMA:", normalizedHeaders);
   
   // Spanish keywords
-  const spanishKeywords = ['impresiones', 'coste', 'campaña', 'resultados', 'importe', 'gastado', 'clics', 'impr'];
+  const spanishKeywords = ['impresiones', 'coste', 'campaña', 'resultados', 'importe', 'gastado', 'clics', 'impr', 'gasto', 'costo'];
   // English keywords
-  const englishKeywords = ['impressions', 'cost', 'campaign', 'results', 'amount', 'spent', 'clicks', 'impr'];
+  const englishKeywords = ['impressions', 'cost', 'campaign', 'results', 'amount', 'spent', 'clicks', 'impr', 'spend'];
   // French keywords
-  const frenchKeywords = ['impressions', 'coût', 'campagne', 'résultats', 'montant', 'dépensé', 'clics', 'impr'];
+  const frenchKeywords = ['impressions', 'coût', 'campagne', 'résultats', 'montant', 'dépensé', 'clics', 'impr', 'coût'];
   
   // Count matches for each language
   const spanishMatches = spanishKeywords.filter(keyword => 
@@ -80,17 +82,19 @@ const detectLanguage = (headers: string[]): string => {
   console.log(`🌐 Detección de idioma - Español: ${spanishMatches}, Inglés: ${englishMatches}, Francés: ${frenchMatches}`);
   
   // Log exact matches for debugging
+  console.log("🇪🇸 KEYWORDS ESPAÑOL ENCONTRADOS:");
   spanishKeywords.forEach(keyword => {
     const matchingHeaders = normalizedHeaders.filter(header => header.includes(keyword));
     if (matchingHeaders.length > 0) {
-      console.log(`🇪🇸 Palabra clave española "${keyword}" encontrada en: ${matchingHeaders.join(', ')}`);
+      console.log(`🇪🇸 "${keyword}" encontrado en: ${matchingHeaders.join(', ')}`);
     }
   });
   
+  console.log("🇬🇧 KEYWORDS INGLÉS ENCONTRADOS:");
   englishKeywords.forEach(keyword => {
     const matchingHeaders = normalizedHeaders.filter(header => header.includes(keyword));
     if (matchingHeaders.length > 0) {
-      console.log(`🇬🇧 Palabra clave inglesa "${keyword}" encontrada en: ${matchingHeaders.join(', ')}`);
+      console.log(`🇬🇧 "${keyword}" encontrado en: ${matchingHeaders.join(', ')}`);
     }
   });
   
@@ -107,11 +111,11 @@ const detectPlatform = (headers: string[]): string => {
   console.log("🔍 ENCABEZADOS UNIDOS PARA DETECCIÓN DE PLATAFORMA:", joinedHeaders);
   
   // Platform-specific patterns
-  const metaPatterns = ['facebook', 'meta', 'fb', 'instagram', 'ig', 'adset', 'conjunto', 'anuncios', 'ad account', 'cuenta'];
-  const googlePatterns = ['google', 'adwords', 'cpc', 'display', 'search', 'youtube', 'campañas', 'campaign'];
-  const xPatterns = ['twitter', 'x ', 'tweet', 'promoted', 'engagement'];
-  const linkedinPatterns = ['linkedin', 'sponsored', 'content', 'inmail', 'follower'];
-  const tiktokPatterns = ['tiktok', 'bytedance', 'video view', 'creatives'];
+  const metaPatterns = ['facebook', 'meta', 'fb', 'instagram', 'ig', 'adset', 'conjunto', 'anuncios', 'ad account', 'cuenta', 'alcance', 'reach'];
+  const googlePatterns = ['google', 'adwords', 'cpc', 'display', 'search', 'youtube', 'campañas', 'campaign', 'click type', 'tipo de clic', 'impr.', 'impr. (%)'];
+  const xPatterns = ['twitter', 'x ', 'tweet', 'promoted', 'engagement', 'interacciones'];
+  const linkedinPatterns = ['linkedin', 'sponsored', 'content', 'inmail', 'follower', 'seguidor'];
+  const tiktokPatterns = ['tiktok', 'bytedance', 'video view', 'creatives', 'visualización'];
   
   // Check for platform patterns
   const metaMatches = metaPatterns.filter(pattern => joinedHeaders.includes(pattern));
@@ -151,7 +155,7 @@ const normalizeText = (text: string): string => {
 // Enhanced CSV processing with better platform and column detection
 export const processCSV = (csvContent: string): CampaignData[] => {
   try {
-    console.log("🔄 PROCESANDO CSV - VERSIÓN MEJORADA 2.0");
+    console.log("🔄 PROCESANDO CSV - VERSIÓN MEJORADA 3.0");
     
     // Detect delimiter automatically
     const delimiter = detectDelimiter(csvContent);
@@ -168,10 +172,11 @@ export const processCSV = (csvContent: string): CampaignData[] => {
     let headerLine = lines[0].replace(/^\uFEFF/, ''); // Remove BOM if present
     headerLine = headerLine.replace(/^"/, '').replace(/"$/, ''); // Remove surrounding quotes
     
-    let headers = headerLine.split(delimiter).map(header => normalizeText(header.trim()));
+    let headers = headerLine.split(delimiter).map(header => header.trim());
+    let normalizedHeaders = headers.map(header => normalizeText(header));
     
-    console.log("📊 ENCABEZADOS DETECTADOS (ORIGINALES):", headerLine.split(delimiter));
-    console.log("📊 ENCABEZADOS NORMALIZADOS:", headers);
+    console.log("📊 ENCABEZADOS DETECTADOS (ORIGINALES):", headers);
+    console.log("📊 ENCABEZADOS NORMALIZADOS:", normalizedHeaders);
     
     // Detect language based on headers
     const language = detectLanguage(headers);
@@ -179,53 +184,73 @@ export const processCSV = (csvContent: string): CampaignData[] => {
     
     // Expanded field mappings for multiple languages and platforms
     const fieldMappings: Record<string, string[]> = {
-      platform: ['platform', 'plataforma', 'red', 'red social', 'source', 'origen', 'canal', 'fuente', 'media source', 'plateforme'],
-      campaign_name: ['campaign', 'campaign_name', 'campaña', 'nombre_campaña', 'nombre campaña', 'nombre de campaña', 'campaign name', 'kampagne', 'campagne', 'nombre campaña', 'naziv kampanje'],
-      ad_set_name: ['adset', 'adset_name', 'ad set name', 'ad_set_name', 'conjunto de anuncios', 'nombre del conjunto', 'ensemble dannonces', 'nom de lensemble', 'grupo de anuncios'],
-      date: ['date', 'fecha', 'day', 'día', 'mes', 'month', 'reporting_start', 'fecha_inicio', 'reporting_end', 'datum', 'date', 'periode'],
-      impressions: ['impressions', 'impresiones', 'impr', 'impres', 'views', 'vistas', 'imprs', 'impression', 'impressionen', 'anzeigehäufigkeit', 'visualizaciones', 'visualizacoes', 'impressões', 'impressions', 'impr.', 'vista', 'visualizaciones', 'imprenta', 'impressione', 'impr', 'impresiones'],
-      clicks: ['clicks', 'clics', 'cliques', 'click', 'clic', 'pulsaciones', 'click_total', 'all_clicks', 'klicks', 'klick', 'pulsacion', 'pulsações', 'cliques', 'toque', 'clics en el enlace', 'cliques no link', 'clics', 'clics totales', 'all clicks', 'total clicks'],
-      link_clicks: ['link clicks', 'link_clicks', 'outbound clicks', 'outbound_clicks', 'clics en el enlace', 'clics de enlace', 'link_klicks', 'klicks auf links', 'cliques no link', 'cliques de lien', 'clics en enlaces', 'clicks on links'],
-      conversions: ['conversions', 'conversiones', 'conv', 'converts', 'convs', 'results', 'resultados', 'outcomes', 'conversion', 'konversionen', 'umwandlungen', 'resultats', 'ergebnisse', 'resultaten', 'resultados', 'resultats', 'conversioni', 'purchase', 'purchases', 'compras', 'adquisiciones', 'achats'],
-      cost: ['cost', 'costo', 'coste', 'gasto', 'spend', 'gastos', 'inversión', 'inversion', 'budget', 'presupuesto', 'kosten', 'ausgaben', 'cout', 'dépenses', 'spesa', 'speso', 'gasto', 'gastos', 'amount spent', 'importe gastado', 'valor gasto', 'montant dépensé'],
-      amount_spent_eur: ['amount_spent', 'money_spent', 'importe_gastado', 'importe gastado (eur)', 'importe gastado', 'total spent', 'gasto total', 'gesamtausgaben', 'montant total', 'total gasto', 'montant dépensé'],
-      revenue: ['revenue', 'ingresos', 'income', 'ganancia', 'ganancias', 'ingreso', 'purchases_value', 'conversion_value', 'valor', 'valor de la conversión', 'valor de conversão', 'einnahmen', 'umsatz', 'revenu', 'rendimentos', 'ricavi', 'total revenue', 'ingresos totales', 'purchase value', 'sales value', 'valor de venta', 'valeur des ventes'],
-      ctr: ['ctr', 'click_through_rate', 'click through rate', 'tasa_clics', 'tasa de clics', 'ratio_clicks', 'durchklickrate', 'taux de clics', 'taxa de cliques', 'taux de clic', 'tasa de pulsaciones', 'ctr (%)', 'click-through rate'],
-      cpc: ['cpc', 'cost_per_click', 'cost per click', 'coste_por_clic', 'coste por clic', 'costo_por_clic', 'kosten pro klick', 'cout par clic', 'costo por clique', 'cost-per-click', 'costo per clic', 'coût par clic'],
-      cpm: ['cpm', 'cost_per_1000_impression', 'cost per thousand', 'coste_por_mil', 'coste por mil', 'costo_por_mil', 'kosten pro 1000', 'cout pour mille', 'costo per mille', 'coût par mille impressions', 'costo por mil impresiones']
+      platform: ['platform', 'plataforma', 'red', 'red social', 'source', 'origen', 'canal', 'fuente', 'media source', 'plateforme', 'network', 'red'],
+      campaign_name: ['campaign', 'campaign_name', 'campaña', 'nombre_campaña', 'nombre campaña', 'nombre de campaña', 'campaign name', 'kampagne', 'campagne', 'nombre campaña', 'naziv kampanje', 'nombre'],
+      ad_set_name: ['adset', 'adset_name', 'ad set name', 'ad_set_name', 'conjunto de anuncios', 'nombre del conjunto', 'ensemble dannonces', 'nom de lensemble', 'grupo de anuncios', 'conjunto'],
+      date: ['date', 'fecha', 'day', 'día', 'mes', 'month', 'reporting_start', 'fecha_inicio', 'reporting_end', 'datum', 'date', 'periode', 'fecha de informe', 'periodo'],
+      impressions: ['impressions', 'impresiones', 'impr', 'impres', 'views', 'vistas', 'imprs', 'impression', 'impressionen', 'anzeigehäufigkeit', 'visualizaciones', 'visualizacoes', 'impressões', 'impr.', 'vista', 'visualizaciones', 'imprenta', 'impressione', 'impressions', 'impr.', 'impressions served', 'impresiones servidas', 'impresiones mostradas'],
+      clicks: ['clicks', 'clics', 'cliques', 'click', 'clic', 'pulsaciones', 'click_total', 'all_clicks', 'klicks', 'klick', 'pulsacion', 'pulsações', 'cliques', 'toque', 'clics en el enlace', 'cliques no link', 'clics', 'clics totales', 'all clicks', 'total clicks', 'engagement', 'total de clics'],
+      link_clicks: ['link clicks', 'link_clicks', 'outbound clicks', 'outbound_clicks', 'clics en el enlace', 'clics de enlace', 'link_klicks', 'klicks auf links', 'cliques no link', 'cliques de lien', 'clics en enlaces', 'clicks on links', 'website clicks', 'clics de sitio web', 'clics sitio web'],
+      conversions: ['conversions', 'conversiones', 'conv', 'converts', 'convs', 'results', 'resultados', 'outcomes', 'conversion', 'konversionen', 'umwandlungen', 'resultats', 'ergebnisse', 'resultaten', 'resultados', 'resultats', 'conversioni', 'purchase', 'purchases', 'compras', 'adquisiciones', 'achats', 'all conv.', 'todas las conv.'],
+      cost: ['cost', 'costo', 'coste', 'gasto', 'spend', 'gastos', 'inversión', 'inversion', 'budget', 'presupuesto', 'kosten', 'ausgaben', 'cout', 'dépenses', 'spesa', 'speso', 'gasto', 'gastos', 'amount spent', 'importe gastado', 'valor gasto', 'montant dépensé', 'coste (eur)', 'cost (eur)'],
+      amount_spent_eur: ['amount_spent', 'money_spent', 'importe_gastado', 'importe gastado (eur)', 'importe gastado', 'total spent', 'gasto total', 'gesamtausgaben', 'montant total', 'total gasto', 'montant dépensé', 'cost (eur)', 'coste (eur)', 'coste (€)', 'cost (€)'],
+      revenue: ['revenue', 'ingresos', 'income', 'ganancia', 'ganancias', 'ingreso', 'purchases_value', 'conversion_value', 'valor', 'valor de la conversión', 'valor de conversão', 'einnahmen', 'umsatz', 'revenu', 'rendimentos', 'ricavi', 'total revenue', 'ingresos totales', 'purchase value', 'sales value', 'valor de venta', 'valeur des ventes', 'conv. value', 'valor de conv.'],
+      ctr: ['ctr', 'click_through_rate', 'click through rate', 'tasa_clics', 'tasa de clics', 'ratio_clicks', 'durchklickrate', 'taux de clics', 'taxa de cliques', 'taux de clic', 'tasa de pulsaciones', 'ctr (%)', 'click-through rate', 'porcentaje de clics'],
+      cpc: ['cpc', 'cost_per_click', 'cost per click', 'coste_por_clic', 'coste por clic', 'costo_por_clic', 'kosten pro klick', 'cout par clic', 'costo por clique', 'cost-per-click', 'costo per clic', 'coût par clic', 'avg. cpc', 'cpc promedio'],
+      cpm: ['cpm', 'cost_per_1000_impression', 'cost per thousand', 'coste_por_mil', 'coste por mil', 'costo_por_mil', 'kosten pro 1000', 'cout pour mille', 'costo per mille', 'coût par mille impressions', 'costo por mil impresiones', 'avg. cpm', 'cpm promedio']
     };
     
-    // Find indices of all possible field variations
+    // Find indices of all possible field variations with improved logging
     const columnMap: Record<string, number> = {};
     
     // Log each header for visual inspection
     headers.forEach((header, index) => {
-      console.log(`📋 Encabezado ${index}: "${header}"`);
+      console.log(`📋 Encabezado ${index}: "${header}" (Normalizado: "${normalizeText(header)}")`);
     });
     
-    // Try exact and partial matches for each field
+    // Try exact and partial matches for each field with detailed logging
     Object.entries(fieldMappings).forEach(([standardField, variations]) => {
+      console.log(`🔍 Buscando campo '${standardField}' en las siguientes variaciones: ${variations.join(', ')}`);
+      
       // Try exact match first
-      let foundIndex = headers.findIndex(header => 
+      let foundExact = normalizedHeaders.findIndex(header => 
         variations.some(variation => normalizeText(variation) === header)
       );
       
-      // If not found, try partial match
-      if (foundIndex === -1) {
-        foundIndex = headers.findIndex(header => 
-          variations.some(variation => header.includes(normalizeText(variation)))
-        );
+      // Log exact match attempt
+      if (foundExact !== -1) {
+        console.log(`✅ MATCH EXACTO para '${standardField}': "${headers[foundExact]}" (índice ${foundExact})`);
+        columnMap[standardField] = foundExact;
+        return;
+      } else {
+        console.log(`❌ No se encontró match exacto para '${standardField}'`);
       }
       
-      if (foundIndex !== -1) {
-        columnMap[standardField] = foundIndex;
-        console.log(`✅ Campo '${standardField}' mapeado a la columna ${foundIndex}: "${headers[foundIndex]}"`);
-      } else {
-        console.log(`❌ No se pudo mapear el campo '${standardField}' a ninguna columna`);
+      // If not found, try partial match with more permissive matching
+      for (let i = 0; i < normalizedHeaders.length; i++) {
+        const header = normalizedHeaders[i];
+        const originalHeader = headers[i];
         
-        // Show which variations we were looking for
-        console.log(`🔍 Variaciones buscadas para '${standardField}': ${variations.join(', ')}`);
+        for (const variation of variations) {
+          const normalizedVariation = normalizeText(variation);
+          
+          // Check if header contains the variation or variation contains the header
+          if (header.includes(normalizedVariation) || normalizedVariation.includes(header)) {
+            console.log(`✅ MATCH PARCIAL para '${standardField}': "${originalHeader}" contiene o está contenido en "${variation}" (índice ${i})`);
+            columnMap[standardField] = i;
+            return;
+          }
+          
+          // Special case for abbreviations (e.g., "impr." matching "impressions")
+          if (normalizedVariation.startsWith(header.substring(0, Math.min(4, header.length)))) {
+            console.log(`✅ MATCH ABREVIACIÓN para '${standardField}': "${originalHeader}" es abreviación de "${variation}" (índice ${i})`);
+            columnMap[standardField] = i;
+            return;
+          }
+        }
       }
+      
+      console.log(`❌ No se pudo mapear el campo '${standardField}' a ninguna columna`);
     });
     
     // Detect platform based on headers if not explicitly found
@@ -234,6 +259,11 @@ export const processCSV = (csvContent: string): CampaignData[] => {
       defaultPlatform = detectPlatform(headers);
       console.log(`🔍 Plataforma detectada automáticamente: ${defaultPlatform}`);
     }
+    
+    console.log("🔄 MAPA DE COLUMNAS FINAL:");
+    Object.entries(columnMap).forEach(([field, index]) => {
+      console.log(`📊 ${field} = "${headers[index]}" (índice ${index})`);
+    });
     
     console.log("🔄 Iniciando procesamiento de filas...");
     
@@ -245,12 +275,17 @@ export const processCSV = (csvContent: string): CampaignData[] => {
     
     // Skip any potential header rows (sometimes CSV files have multiple header rows)
     let dataStartIndex = 1;
+    // Check more header-like patterns, including dates in format DD/MM/YYYY
+    const datePattern = /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/;
+    
     while (dataStartIndex < lines.length && 
           (lines[dataStartIndex].toLowerCase().includes("total") || 
            lines[dataStartIndex].toLowerCase().includes("fecha") || 
            lines[dataStartIndex].toLowerCase().includes("date") || 
            lines[dataStartIndex].toLowerCase().includes("campaign") || 
-           lines[dataStartIndex].toLowerCase().includes("campaña"))) {
+           lines[dataStartIndex].toLowerCase().includes("campaña") ||
+           datePattern.test(lines[dataStartIndex].split(delimiter)[0].trim()))) {
+      console.log(`⏭️ Saltando línea de tipo encabezado: "${lines[dataStartIndex].substring(0, 50)}..."`);
       dataStartIndex++;
     }
     
@@ -314,7 +349,7 @@ export const processCSV = (csvContent: string): CampaignData[] => {
         continue;
       }
 
-      // Log the first few rows for debugging
+      // Log values for first few rows and periodic samples
       if (i <= 5 || (i % 50 === 0 && i <= 200)) {
         console.log(`🔍 VALORES DE LA FILA ${i}:`, values);
       }
@@ -359,7 +394,7 @@ export const processCSV = (csvContent: string): CampaignData[] => {
       
       // Enhanced number parsing with support for various formats
       const parseNumeric = (value: string | undefined): number => {
-        if (!value || value === '--' || value === '-' || value === 'N/A' || value === '–') {
+        if (!value || value === '--' || value === '-' || value === 'N/A' || value === '–' || value === '') {
           return 0;
         }
         
@@ -390,113 +425,106 @@ export const processCSV = (csvContent: string): CampaignData[] => {
         return num;
       };
       
-      // Extract impressions with improved parsing
-      const impressions = columnMap.impressions !== undefined 
-        ? parseNumeric(values[columnMap.impressions])
-        : 0;
+      // Extract fields with debug logging for non-zero values
+      const getCampaignField = (fieldName: string, defaultValue: any = undefined) => {
+        const index = columnMap[fieldName];
+        if (index === undefined || index >= values.length) {
+          return defaultValue;
+        }
         
-      // For debugging, log each row's impressions value
-      if (i <= 10 || impressions > 10000 || (i % 20 === 0 && i <= 100)) {
-        const originalValue = columnMap.impressions !== undefined ? values[columnMap.impressions] : "N/A";
-        console.log(`🔢 Fila ${i}: Impresiones - Original: "${originalValue}", Parseado: ${impressions}`);
-      }
+        const originalValue = values[index];
+        
+        // For numeric fields, try to parse
+        if (['impressions', 'clicks', 'link_clicks', 'conversions', 'cost', 'amount_spent_eur', 'revenue'].includes(fieldName)) {
+          const numericValue = parseNumeric(originalValue);
+          
+          // Log significant values
+          if (numericValue > 0) {
+            console.log(`📈 Fila ${i}: ${fieldName} - Original: "${originalValue}", Parseado: ${numericValue}`);
+          }
+          
+          return numericValue;
+        }
+        
+        return originalValue;
+      };
+      
+      // Extract impressions with improved parsing
+      const impressions = getCampaignField('impressions', 0);
+      const clicks = getCampaignField('clicks', 0);
+      const linkClicks = getCampaignField('link_clicks', 0);
+      const conversions = getCampaignField('conversions', 0);
+      const amountSpentEur = getCampaignField('amount_spent_eur', 0);
+      const cost = getCampaignField('cost', 0);
+      const revenue = getCampaignField('revenue', 0);
+      const ctr = getCampaignField('ctr');
+      const cpc = getCampaignField('cpc');
+      const cpm = getCampaignField('cpm');
+      const campaignName = getCampaignField('campaign_name', '');
+      const adSetName = getCampaignField('ad_set_name', '');
+      const date = getCampaignField('date', '');
       
       // Accumulate total impressions for verification
       totalImpressions += impressions;
       
-      // Extract clicks with improved parsing
-      const rawClicks = columnMap.clicks !== undefined 
-        ? parseNumeric(values[columnMap.clicks]) 
-        : 0;
-      const linkClicks = columnMap.link_clicks !== undefined 
-        ? parseNumeric(values[columnMap.link_clicks]) 
-        : 0;
-      
       // Prefer link_clicks when available
-      const clicks = linkClicks > 0 ? linkClicks : rawClicks;
-      
-      // Extract conversions
-      const conversions = columnMap.conversions !== undefined 
-        ? parseNumeric(values[columnMap.conversions]) 
-        : 0;
-      
-      // Extract cost values
-      const amountSpentEur = columnMap.amount_spent_eur !== undefined 
-        ? parseNumeric(values[columnMap.amount_spent_eur]) 
-        : 0;
-      const generalCost = columnMap.cost !== undefined 
-        ? parseNumeric(values[columnMap.cost]) 
-        : 0;
+      const finalClicks = linkClicks > 0 ? linkClicks : clicks;
       
       // Use the most specific cost available
-      const cost = amountSpentEur > 0 ? amountSpentEur : generalCost;
-      
-      // Extract revenue, or if not available, calculate with estimated conversion value
-      let revenue = columnMap.revenue !== undefined 
-        ? parseNumeric(values[columnMap.revenue]) 
-        : 0;
-      
-      if (revenue === 0 && conversions > 0) {
-        // Default estimated value per conversion
-        const estimatedValuePerConversion = 30;
-        revenue = conversions * estimatedValuePerConversion;
-      }
-      
-      // Extract or calculate derived metrics
-      let ctr = columnMap.ctr !== undefined 
-        ? parseNumeric(values[columnMap.ctr]) 
-        : undefined;
-        
-      let cpc = columnMap.cpc !== undefined 
-        ? parseNumeric(values[columnMap.cpc]) 
-        : undefined;
-        
-      let cpm = columnMap.cpm !== undefined 
-        ? parseNumeric(values[columnMap.cpm]) 
-        : undefined;
+      const finalCost = amountSpentEur > 0 ? amountSpentEur : cost;
       
       // Calculate derived metrics if not available
-      if (ctr === undefined && impressions > 0) {
-        ctr = (clicks / impressions) * 100;
+      let finalCtr = typeof ctr === 'number' ? ctr : undefined;
+      let finalCpc = typeof cpc === 'number' ? cpc : undefined;
+      let finalCpm = typeof cpm === 'number' ? cpm : undefined;
+      
+      if (finalCtr === undefined && impressions > 0) {
+        finalCtr = (finalClicks / impressions) * 100;
       }
       
-      if (cpc === undefined && clicks > 0) {
-        cpc = cost / clicks;
+      if (finalCpc === undefined && finalClicks > 0) {
+        finalCpc = finalCost / finalClicks;
       }
       
-      if (cpm === undefined && impressions > 0) {
-        cpm = (cost / impressions) * 1000;
+      if (finalCpm === undefined && impressions > 0) {
+        finalCpm = (finalCost / impressions) * 1000;
       }
       
       // Calculate ROI
-      const roi = cost > 0 ? ((revenue - cost) / cost) * 100 : 0;
+      const roi = finalCost > 0 ? ((revenue - finalCost) / finalCost) * 100 : 0;
       
       // Create campaign data object with metrics
       const campaignData: CampaignData = {
         platform,
-        campaign_name: columnMap.campaign_name !== undefined ? values[columnMap.campaign_name] : undefined,
-        ad_set_name: columnMap.ad_set_name !== undefined ? values[columnMap.ad_set_name] : undefined,
-        date: columnMap.date !== undefined ? values[columnMap.date] : undefined,
+        campaign_name: campaignName || undefined,
+        ad_set_name: adSetName || undefined,
+        date: date || undefined,
         impressions,
-        clicks,
+        clicks: finalClicks,
         link_clicks: linkClicks,
         conversions,
-        cost,
+        cost: finalCost,
         amount_spent_eur: amountSpentEur,
         revenue,
-        ctr,
-        cpc,
-        cpm,
+        ctr: finalCtr,
+        cpc: finalCpc,
+        cpm: finalCpm,
         roi
       };
       
       // Log complete object for debugging (for a sample of rows)
-      if (i <= 5 || (i % 50 === 0 && i <= 100)) {
+      if (i <= 5 || (i % 50 === 0 && i <= 100) || impressions > 1000) {
         console.log(`📊 Objeto completo fila ${i}:`, campaignData);
       }
       
-      results.push(campaignData);
-      rowsProcessed++;
+      // Only add rows with at least one non-zero metric
+      if (impressions > 0 || finalClicks > 0 || conversions > 0 || finalCost > 0 || revenue > 0) {
+        results.push(campaignData);
+        rowsProcessed++;
+      } else {
+        console.warn(`⚠️ Saltando fila ${i} por no tener ninguna métrica > 0`);
+        rowsSkipped++;
+      }
       
       // Log progress periodically
       if (i % 100 === 0 || i === lines.length - 1) {
@@ -505,15 +533,15 @@ export const processCSV = (csvContent: string): CampaignData[] => {
     }
     
     // Log statistics for debugging
-    console.log(`Filas procesadas: ${rowsProcessed}, Filas omitidas: ${rowsSkipped}`);
-    console.log(`Total de impresiones encontradas: ${totalImpressions}`);
+    console.log(`🔄 Filas procesadas: ${rowsProcessed}, Filas omitidas: ${rowsSkipped}`);
+    console.log(`📊 Total de impresiones encontradas: ${totalImpressions}`);
     
     // Verify total impressions
     const verifiedTotalImpressions = results.reduce((sum, item) => sum + item.impressions, 0);
-    console.log(`Verificación: Total de impresiones en resultados: ${verifiedTotalImpressions}`);
+    console.log(`✅ Verificación: Total de impresiones en resultados: ${verifiedTotalImpressions}`);
     
     // Log top campaigns by impressions
-    console.log("Top 5 campañas por impresiones:");
+    console.log("📈 Top 5 campañas por impresiones:");
     results
       .filter(item => item.impressions > 0)
       .sort((a, b) => b.impressions - a.impressions)
@@ -524,7 +552,7 @@ export const processCSV = (csvContent: string): CampaignData[] => {
     
     return results;
   } catch (error) {
-    console.error("Error parsing CSV:", error);
+    console.error("❌ Error parsing CSV:", error);
     throw new Error("Error processing CSV data. Please check the format.");
   }
 };

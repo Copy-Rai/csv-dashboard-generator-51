@@ -40,7 +40,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
     setError(null);
     
     try {
-      console.log("🔄 INICIO PROCESAMIENTO DE ARCHIVO - VERSIÓN: 5.0.0");
+      console.log("🔄 INICIO PROCESAMIENTO DE ARCHIVO - VERSIÓN: 6.0.0");
       console.log(`📁 Archivo recibido: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
       
       const reader = new FileReader();
@@ -86,17 +86,18 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
           let highImpressionsCount = 0;
           let topImpressionsTotal = 0;
           
-          cleanedData
-            .filter(item => item.impressions > 10000)
+          const topCampaigns = cleanedData
+            .filter(item => item.impressions > 1000)
             .sort((a, b) => b.impressions - a.impressions)
-            .slice(0, 10)
-            .forEach((item, idx) => {
-              console.log(`🔍 Registro con muchas impresiones #${idx+1}: ${item.impressions} - ${item.campaign_name || 'Sin nombre'}`);
-              highImpressionsCount++;
-              topImpressionsTotal += item.impressions;
-            });
+            .slice(0, 10);
+            
+          topCampaigns.forEach((item, idx) => {
+            console.log(`🔍 Registro con muchas impresiones #${idx+1}: ${item.impressions} - ${item.campaign_name || 'Sin nombre'}`);
+            highImpressionsCount++;
+            topImpressionsTotal += item.impressions;
+          });
           
-          console.log(`🔍 Se encontraron ${highImpressionsCount} registros con más de 10,000 impresiones`);
+          console.log(`🔍 Se encontraron ${highImpressionsCount} registros con más de 1,000 impresiones`);
           console.log(`📊 Impresiones en top 10 campañas: ${topImpressionsTotal}`);
           
           // Verify final impression total
