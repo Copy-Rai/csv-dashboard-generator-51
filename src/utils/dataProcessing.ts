@@ -1,3 +1,4 @@
+
 interface CampaignData {
   platform: string;
   campaign_name?: string;
@@ -14,7 +15,7 @@ interface CampaignData {
   status?: string;
 }
 
-// Detector automático de delimitador
+// Detector automático de delimitador con preferencia para punto y coma
 const detectDelimiter = (csvContent: string): string => {
   const firstLine = csvContent.split('\n')[0];
   
@@ -23,15 +24,48 @@ const detectDelimiter = (csvContent: string): string => {
   const semicolonCount = (firstLine.match(/;/g) || []).length;
   const tabCount = (firstLine.match(/\t/g) || []).length;
   
-  // Devolvemos el delimitador más frecuente
-  if (semicolonCount > commaCount && semicolonCount > tabCount) return ';';
-  if (tabCount > commaCount && tabCount > semicolonCount) return '\t';
-  return ','; // Por defecto usamos coma
+  console.log(`Delimitadores detectados: , (${commaCount}), ; (${semicolonCount}), \\t (${tabCount})`);
+  
+  // Preferimos punto y coma cuando hay más o igual cantidad que comas
+  // ya que con formato europeo, las comas pueden estar en los números
+  if (semicolonCount >= 1) return ';';
+  if (tabCount > commaCount) return '\t';
+  return ',';
 };
 
 // Función para normalizar texto removiendo acentos
 const normalizeText = (text: string): string => {
   return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+};
+
+// Parse numérico mejorado con manejo específico para formato europeo
+const parseEuropeanNumeric = (value: string | undefined): number => {
+  if (!value) return 0;
+  
+  // Limpiamos el valor de símbolos de moneda y otros caracteres no numéricos
+  let cleaned = value.replace(/[€$%]/g, '').trim();
+  
+  // Formato europeo: la coma es el separador decimal
+  // Si contiene punto, asumimos que es separador de miles
+  if (cleaned.includes('.') && cleaned.includes(',')) {
+    // Formato europeo con separador de miles: quitar puntos y reemplazar coma por punto
+    cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+  } 
+  // Si solo contiene coma como posible decimal
+  else if (cleaned.includes(',') && !cleaned.includes('.')) {
+    cleaned = cleaned.replace(',', '.');
+  }
+  
+  // Convertir a número
+  const num = parseFloat(cleaned);
+  
+  // Si no es un número válido, devolver 0
+  if (isNaN(num)) {
+    console.warn(`Valor no numérico detectado: ${value} -> ${cleaned}`);
+    return 0;
+  }
+  
+  return num;
 };
 
 // Process CSV content to structured data with enhanced flexibility
@@ -40,23 +74,14 @@ export const processCSV = (csvContent: string): CampaignData[] => {
     // Intentamos detectar y corregir problemas de codificación
     let normalizedContent = csvContent;
     
-    // Si detectamos caracteres extraños típicos de problemas de codificación, intentamos arreglarlos
-    if (csvContent.includes('Ã') || csvContent.includes('â€')) {
-      try {
-        // Intento de re-decodificación para problemas comunes
-        normalizedContent = decodeURIComponent(escape(csvContent));
-      } catch (e) {
-        console.warn("Error al intentar corregir la codificación", e);
-        // Continuamos con el contenido original
-      }
-    }
-    
-    // Detectamos el delimitador automáticamente
+    // Detectamos el delimitador automáticamente, preferentemente para formato europeo
     const delimiter = detectDelimiter(normalizedContent);
-    console.log(`Delimitador detectado: "${delimiter}"`);
+    console.log(`Delimitador seleccionado: "${delimiter}"`);
     
     const lines = normalizedContent.split(/\r?\n/);
     let headers = lines[0].split(delimiter).map(header => normalizeText(header.trim()));
+    
+    console.log("Encabezados detectados:", headers);
     
     // Handle empty lines and remove any blank headers
     const filteredLines = lines.filter(line => line.trim() !== '');
@@ -64,20 +89,19 @@ export const processCSV = (csvContent: string): CampaignData[] => {
       throw new Error("El archivo CSV no contiene datos suficientes");
     }
     
-    // Map column variations to standardized field names - Ampliado con más variaciones en varios idiomas
+    // Map column variations to standardized field names - Ampliado con variaciones de Meta Ads
     const fieldMappings: Record<string, string[]> = {
-      platform: ['platform', 'plataforma', 'red', 'red social', 'source', 'origen', 'canal', 'fuente', 'media source', 'publisher', 'publisher_platform', 'ad_network', 'network'],
-      campaign_name: ['campaign', 'campaign_name', 'campaña', 'nombre_campaña', 'nombre campaña', 'nombre de campaña', 'campaign name', 'ad_name', 'ad name', 'adset', 'adset_name', 'campaign_name', 'campana', 'conjunto de anuncios', 'nombre del conjunto de anuncios'],
+      platform: ['platform', 'plataforma', 'red', 'red social', 'source', 'origen', 'canal', 'fuente', 'media source', 'publisher', 'publisher_platform', 'ad_network', 'network', 'delivery platform', 'plataforma de entrega'],
+      campaign_name: ['campaign', 'campaign_name', 'campaña', 'nombre_campaña', 'nombre campaña', 'nombre de campaña', 'campaign name', 'ad_name', 'ad name', 'adset', 'adset_name', 'campaign_name', 'campana', 'conjunto de anuncios', 'nombre del conjunto de anuncios', 'ad set name', 'nombre del conjunto'],
       date: ['date', 'fecha', 'day', 'día', 'mes', 'month', 'reporting_start', 'fecha_inicio', 'reporting_end', 'time', 'periodo', 'fecha de inicio', 'fecha de finalizacion'],
-      impressions: ['impressions', 'impresiones', 'impr', 'impres', 'views', 'vistas', 'imprs', 'impression', 'alcance', 'reach', 'viewability', 'impressions_total', 'impresiones_totales', 'shown', 'displays'],
-      clicks: ['clicks', 'clics', 'cliques', 'click', 'clic', 'pulsaciones', 'click_total', 'link clicks', 'link_clicks', 'outbound clicks', 'outbound_clicks', 'all_clicks', 'total_clicks', 'clics en el enlace', 'clics de enlace'],
+      impressions: ['impressions', 'impresiones', 'impr', 'impres', 'views', 'vistas', 'imprs', 'impression', 'alcance', 'reach', 'viewability', 'impressions_total', 'impresiones_totales', 'shown', 'displays', 'impresiones mostradas'],
+      clicks: ['clicks', 'clics', 'cliques', 'click', 'clic', 'pulsaciones', 'click_total', 'link clicks', 'link_clicks', 'outbound clicks', 'outbound_clicks', 'all_clicks', 'total_clicks', 'clics en el enlace', 'clics de enlace', 'clics en enlaces'],
       conversions: ['conversions', 'conversiones', 'conv', 'converts', 'convs', 'results', 'resultados', 'outcomes', 'purchase', 'compras', 'acquisition', 'adquisiciones', 'leads', 'registros', 'sign_ups', 'leads_form', 'registrations', 'app_install', 'install', 'instalaciones', 'actions', 'complete_registration'],
-      cost: ['cost', 'costo', 'coste', 'gasto', 'spend', 'gastos', 'inversión', 'inversion', 'amount_spent', 'money_spent', 'importe_gastado', 'budget', 'presupuesto', 'costo_total', 'gasto_total', 'importe gastado (eur)', 'importe gastado', 'coste (eur)', 'coste (usd)'],
+      cost: ['cost', 'costo', 'coste', 'gasto', 'spend', 'gastos', 'inversión', 'inversion', 'amount_spent', 'money_spent', 'importe_gastado', 'budget', 'presupuesto', 'costo_total', 'gasto_total', 'importe gastado (eur)', 'importe gastado', 'coste (eur)', 'coste (usd)', 'amount spent (eur)', 'amount spent (€)'],
       revenue: ['revenue', 'ingresos', 'revenue', 'income', 'ganancia', 'ganancias', 'ingreso', 'purchases_value', 'purchase_value', 'valor_compra', 'sales_amount', 'sales', 'ventas', 'sales_revenue', 'purchases', 'conversion_value', 'valor_conversion', 'revenue_total', 'valor_total', 'return', 'total_revenue', 'valor de conversion'],
-      ctr: ['ctr', 'click_through_rate', 'click through rate', 'tasa_clics', 'tasa de clics', 'ratio_clicks', 'porcentaje_clics', 'porcentaje de clics en el enlace'],
-      cpc: ['cpc', 'cost_per_click', 'cost per click', 'coste_por_clic', 'coste por clic', 'costo_por_clic', 'cpc_medio', 'average_cpc', 'costo por clic (eur)', 'costo por resultado (eur)'],
-      cpm: ['cpm', 'cost_per_1000_impression', 'cost per thousand', 'coste_por_mil', 'coste por mil impresiones', 'costo_por_mil', 'cpm_medio', 'average_cpm', 'costo por 1000 impresiones mostradas (eur)'],
-      roi: ['roi', 'return_on_investment', 'return on investment', 'retorno_inversion', 'retorno de inversión', 'roas', 'return_on_ad_spend', 'retorno de la inversion publicitaria']
+      ctr: ['ctr', 'click_through_rate', 'click through rate', 'tasa_clics', 'tasa de clics', 'ratio_clicks', 'porcentaje_clics', 'porcentaje de clics en el enlace', 'ctr (all)'],
+      cpc: ['cpc', 'cost_per_click', 'cost per click', 'coste_por_clic', 'coste por clic', 'costo_por_clic', 'cpc_medio', 'average_cpc', 'costo por clic (eur)', 'costo por resultado (eur)', 'cost per link click (€)', 'costo por clic en el enlace (€)'],
+      cpm: ['cpm', 'cost_per_1000_impression', 'cost per thousand', 'coste_por_mil', 'coste por mil impresiones', 'costo_por_mil', 'cpm_medio', 'average_cpm', 'costo por 1000 impresiones mostradas (eur)', 'cpm (cost per 1,000 impressions)', 'cpm (costo por 1.000 impresiones)']
     };
     
     // Enhanced column detection - find indices of all possible variations
@@ -108,34 +132,24 @@ export const processCSV = (csvContent: string): CampaignData[] => {
       
       if (foundIndex !== -1) {
         columnMap[standardField] = foundIndex;
+        console.log(`Campo '${standardField}' encontrado en columna: "${headers[foundIndex]}"`);
       }
     }
     
-    console.log("Mapeo de columnas detectado:", columnMap);
+    console.log("Mapeo final de columnas:", columnMap);
     
-    // Si no encontramos la plataforma, intentamos encontrarla analizando los datos
+    // Si no encontramos la plataforma, asignamos Meta/Facebook por defecto para archivos de Meta Ads
     if (columnMap.platform === undefined) {
-      const commonPlatforms = ['facebook', 'meta', 'google', 'instagram', 'linkedin', 'twitter', 'tiktok', 'youtube', 'pinterest', 'snapchat', 'microsoft', 'bing', 'amazon'];
+      console.log("No se encontró columna para 'platform', asumiendo Meta/Facebook");
       
-      // Check sample rows to see if any column consistently contains platform-like data
-      const sampleRowsToCheck = Math.min(5, filteredLines.length - 1);
+      // Intentamos detectar si es de Meta/Facebook por los nombres de columnas
+      const metaSpecificColumns = ['adset_name', 'delivery_platform', 'clics en el enlace', 'importe gastado (eur)'];
+      let isMeta = headers.some(header => 
+        metaSpecificColumns.some(col => header.includes(normalizeText(col)))
+      );
       
-      for (let colIndex = 0; colIndex < headers.length; colIndex++) {
-        let platformMatches = 0;
-        
-        for (let rowIndex = 1; rowIndex <= sampleRowsToCheck; rowIndex++) {
-          const rowValues = filteredLines[rowIndex].split(delimiter).map(v => normalizeText(v.trim()));
-          if (rowValues.length > colIndex && rowValues[colIndex] && 
-              commonPlatforms.some(platform => rowValues[colIndex].includes(platform))) {
-            platformMatches++;
-          }
-        }
-        
-        // Si la mayoría de las filas de muestra contienen datos similares a una plataforma en esta columna, la usamos
-        if (platformMatches >= sampleRowsToCheck / 2) {
-          columnMap.platform = colIndex;
-          break;
-        }
+      if (isMeta) {
+        console.log("Detectado archivo de Meta Ads por nombres de columnas específicos");
       }
     }
     
@@ -171,8 +185,8 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
       continue;
     }
 
-    // Extract platform - if still not found, use a default
-    let platform = "Unknown";
+    // Extract platform - if still not found, use Meta/Facebook as default for Meta Ads files
+    let platform = "Meta";
     if (columnMap.platform !== undefined && values[columnMap.platform]) {
       platform = values[columnMap.platform];
       
@@ -183,16 +197,7 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
         'facebook ads': 'Facebook',
         'meta': 'Meta',
         'instagram': 'Instagram',
-        'ig': 'Instagram',
-        'google': 'Google',
-        'google ads': 'Google',
-        'adwords': 'Google',
-        'youtube': 'YouTube',
-        'yt': 'YouTube',
-        'twitter': 'Twitter',
-        'x': 'Twitter',
-        'linkedin': 'LinkedIn',
-        'tiktok': 'TikTok'
+        'ig': 'Instagram'
       };
       
       // Normalizar el nombre de la plataforma
@@ -217,55 +222,26 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
       }
     }
     
-    // Extraer o calcular las métricas principales
-    // Mejorar la conversión de datos a números con manejo de formatos internacionales
-    const parseNumeric = (value: string | undefined): number => {
-      if (!value) return 0;
-      
-      // IMPORTANTE: Para formato europeo con coma como decimal
-      let cleaned = value.replace(/[€$%]/g, '').trim();
-      
-      // Si contiene un punto como separador de miles y una coma como decimal
-      if (cleaned.includes('.') && cleaned.includes(',')) {
-        // Formato europeo: eliminar puntos y reemplazar comas por puntos
-        cleaned = cleaned.replace(/\./g, '').replace(',', '.');
-      } 
-      // Si solo contiene coma (decimal europeo)
-      else if (cleaned.includes(',') && !cleaned.includes('.')) {
-        cleaned = cleaned.replace(',', '.');
-      }
-      
-      // Convertir a número
-      const num = parseFloat(cleaned);
-      
-      // Verificar si el valor es extremadamente grande (posible error)
-      if (num > 1000000 && columnMap.cost !== undefined && values[columnMap.cost] === value) {
-        // Si es un valor de costo y es muy grande, podría estar en céntimos o con error de interpretación
-        console.warn(`Valor muy grande detectado: ${value} -> ${num}. Verificando si necesita ajuste.`);
-        
-        // Si parece estar en céntimos, convertir a euros
-        if (num > 1000000 && num < 1000000000) {
-          return num / 100;
-        }
-      }
-      
-      return isNaN(num) ? 0 : num;
-    };
+    // Extracting metrics with improved European number parsing
+    const impressions = columnMap.impressions !== undefined ? parseEuropeanNumeric(values[columnMap.impressions]) : 0;
+    const clicks = columnMap.clicks !== undefined ? parseEuropeanNumeric(values[columnMap.clicks]) : 0;
+    const conversions = columnMap.conversions !== undefined ? parseEuropeanNumeric(values[columnMap.conversions]) : 0;
+    const cost = columnMap.cost !== undefined ? parseEuropeanNumeric(values[columnMap.cost]) : 0;
     
-    // Extracción de métricas principales, asegurando que obtenemos valores numéricos
-    const impressions = columnMap.impressions !== undefined ? parseNumeric(values[columnMap.impressions]) : 0;
-    const clicks = columnMap.clicks !== undefined ? parseNumeric(values[columnMap.clicks]) : 0;
-    const conversions = columnMap.conversions !== undefined ? parseNumeric(values[columnMap.conversions]) : 0;
-    const cost = columnMap.cost !== undefined ? parseNumeric(values[columnMap.cost]) : 0;
-    const revenue = columnMap.revenue !== undefined ? parseNumeric(values[columnMap.revenue]) : 0;
+    // Para revenue, si no está explícito, lo calculamos con un valor estimado por conversión
+    let revenue = columnMap.revenue !== undefined ? parseEuropeanNumeric(values[columnMap.revenue]) : 0;
+    if (revenue === 0 && conversions > 0) {
+      // Valor estimado de conversión (esto es un estimado básico, idealmente se configuraría)
+      const estimatedValuePerConversion = 30; // Valor predeterminado por conversión
+      revenue = conversions * estimatedValuePerConversion;
+    }
     
-    // Calcular o extraer métricas derivadas
-    let ctr = columnMap.ctr !== undefined ? parseNumeric(values[columnMap.ctr]) : undefined;
-    let cpc = columnMap.cpc !== undefined ? parseNumeric(values[columnMap.cpc]) : undefined;
-    let cpm = columnMap.cpm !== undefined ? parseNumeric(values[columnMap.cpm]) : undefined;
-    let roi = columnMap.roi !== undefined ? parseNumeric(values[columnMap.roi]) : undefined;
+    // Extract or calculate derived metrics with European number parsing
+    let ctr = columnMap.ctr !== undefined ? parseEuropeanNumeric(values[columnMap.ctr]) : undefined;
+    let cpc = columnMap.cpc !== undefined ? parseEuropeanNumeric(values[columnMap.cpc]) : undefined;
+    let cpm = columnMap.cpm !== undefined ? parseEuropeanNumeric(values[columnMap.cpm]) : undefined;
     
-    // Calcular métricas derivadas si no están disponibles pero tenemos los datos necesarios
+    // Calculate derived metrics if not available
     if (ctr === undefined && impressions > 0) {
       ctr = (clicks / impressions) * 100;
     }
@@ -278,38 +254,48 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
       cpm = (cost / impressions) * 1000;
     }
     
-    if (roi === undefined && cost > 0) {
-      roi = ((revenue - cost) / cost) * 100;
-    }
+    // Calculate ROI
+    const roi = cost > 0 ? ((revenue - cost) / cost) * 100 : 0;
     
-    // Check if we have any numeric data on this row
-    const hasNumericData = impressions > 0 || clicks > 0 || conversions > 0 || cost > 0 || revenue > 0;
+    // Check if we have any data on this row (now we include all rows)
+    const hasData = true;
     
-    // IMPORTANTE: Ya no excluimos filas sin datos numéricos, solo registramos para depuración
-    if (!hasNumericData) {
+    // IMPORTANTE: Ya no excluimos filas aunque no tengan todos los datos
+    if (hasData) {
+      // Campaign data object with metrics
+      const campaignData: CampaignData = {
+        platform,
+        campaign_name: columnMap.campaign_name !== undefined ? values[columnMap.campaign_name] : undefined,
+        date: columnMap.date !== undefined ? values[columnMap.date] : undefined,
+        impressions,
+        clicks,
+        conversions,
+        cost,
+        revenue,
+        ctr,
+        cpc,
+        cpm,
+        roi,
+        status: campaignStatus // Guardamos el estado para depuración
+      };
+      
+      // Log para depuración
+      if (i <= 5 || i % 100 === 0) {
+        console.log(`Fila ${i} procesada:`, {
+          platform,
+          campaign: campaignData.campaign_name,
+          impresiones: impressions,
+          clics: clicks,
+          conversiones: conversions,
+          coste: cost
+        });
+      }
+      
+      results.push(campaignData);
+      rowsProcessed++;
+    } else {
       emptyDataRows++;
-      // Aún procesamos la fila, pero la marcamos para depuración
     }
-    
-    // Build campaign data with status for debugging
-    const campaignData: CampaignData = {
-      platform,
-      campaign_name: columnMap.campaign_name !== undefined ? values[columnMap.campaign_name] : undefined,
-      date: columnMap.date !== undefined ? values[columnMap.date] : undefined,
-      impressions,
-      clicks,
-      conversions,
-      cost,
-      revenue,
-      ctr,
-      cpc,
-      cpm,
-      roi,
-      status: campaignStatus // Guardamos el estado para depuración
-    };
-    
-    results.push(campaignData);
-    rowsProcessed++;
   }
   
   // Log de estadísticas para depuración
@@ -318,18 +304,21 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
   return results;
 }
 
-// Clean CSV data by extracting first parts of columns that may have multiple values
-// Ahora nos aseguramos de incluir todas las filas, independientemente del status
+// Clean CSV data - ahora simplemente asegura que todos los registros se incluyan 
 export const cleanCSVData = (data: CampaignData[]): CampaignData[] => {
   // Log para depuración
   console.log("Total de registros antes de limpieza:", data.length);
-  console.log("Resumen por estado:", data.reduce((acc, item) => {
-    const status = item.status || "undefined";
-    acc[status] = (acc[status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>));
   
-  // Ahora limpiamos cada elemento sin filtrar por estado
+  // Mostrar distribución por plataforma
+  const platforms = data.reduce((acc: Record<string, number>, item) => {
+    const platform = item.platform || "Unknown";
+    acc[platform] = (acc[platform] || 0) + 1;
+    return acc;
+  }, {});
+  
+  console.log("Distribución por plataforma:", platforms);
+  
+  // Ahora limpiamos cada elemento sin filtrar
   const cleanedData = data.map(item => {
     // Clean platform field if it contains semicolons or other separators
     let platform = item.platform;

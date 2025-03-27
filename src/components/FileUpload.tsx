@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Upload, FileText, AlertCircle, CheckCircle2, FileWarning } from "lucide-react";
@@ -19,6 +20,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
     active: number;
     completed: number;
     emptyData: number;
+    delimiters?: string;
   } | null>(null);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -84,10 +86,10 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
         let data;
         
         try {
-          setProcessingStatus("Procesando formato europeo (punto y coma como delimitador, coma como decimal)...");
+          setProcessingStatus("Procesando con formato europeo (punto y coma como delimitador, coma como decimal)...");
           data = processCSV(text);
           
-          setProcessingStatus("Limpiando y normalizando datos...");
+          setProcessingStatus("Normalizando datos y calculando métricas...");
           data = cleanCSVData(data);
           
           if (!data || data.length === 0) {
@@ -96,16 +98,23 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
             return;
           }
           
+          // Detectar delimitadores usados (para mostrar en UI)
+          const commaCount = (text.split('\n')[0].match(/,/g) || []).length;
+          const semicolonCount = (text.split('\n')[0].match(/;/g) || []).length;
+          const delimiterInfo = semicolonCount > commaCount ? 
+            "punto y coma (formato europeo)" : "coma (formato internacional)";
+          
           const stats = {
             total: data.length,
             active: data.filter(item => 
-              item.campaign_name?.toLowerCase().includes('active')).length,
+              item.campaign_name?.toLowerCase()?.includes('active')).length,
             completed: data.filter(item => 
-              item.campaign_name?.toLowerCase().includes('completed') || 
-              item.campaign_name?.toLowerCase().includes('recently_completed')).length,
+              item.campaign_name?.toLowerCase()?.includes('completed') || 
+              item.campaign_name?.toLowerCase()?.includes('recently_completed')).length,
             emptyData: data.filter(item => 
               (item.impressions === 0 && item.clicks === 0) || 
-              (item.cost === 0 && item.revenue === 0)).length
+              (item.cost === 0 && item.revenue === 0)).length,
+            delimiters: delimiterInfo
           };
           
           setProcessingStats(stats);
@@ -189,8 +198,15 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
             {processingStats && (
               <div className="mt-4 bg-muted/50 rounded-lg p-4 text-sm">
                 <p><strong>Registros procesados:</strong> {processingStats.total}</p>
-                <p><strong>Campañas activas:</strong> {processingStats.active}</p>
-                <p><strong>Campañas completadas:</strong> {processingStats.completed}</p>
+                {processingStats.active > 0 && (
+                  <p><strong>Campañas activas:</strong> {processingStats.active}</p>
+                )}
+                {processingStats.completed > 0 && (
+                  <p><strong>Campañas completadas:</strong> {processingStats.completed}</p>
+                )}
+                {processingStats.delimiters && (
+                  <p><strong>Formato detectado:</strong> {processingStats.delimiters}</p>
+                )}
                 {hasWarnings && (
                   <p className="text-amber-600"><strong>Filas con datos incompletos:</strong> {processingStats.emptyData}</p>
                 )}
@@ -232,11 +248,16 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
                 </span>
               </Button>
             </label>
-            <div className="mt-4 px-4 py-2 bg-muted rounded-md flex items-center max-w-md">
-              <AlertCircle className="w-4 h-4 text-muted-foreground mr-2 flex-shrink-0" />
-              <p className="text-xs text-muted-foreground">
-                Compatible con formato europeo (punto y coma como delimitador, coma como decimal). El sistema incluirá todas las filas con datos, independientemente del estado de las campañas.
-              </p>
+            <div className="mt-4 px-4 py-3 bg-muted rounded-md flex items-start max-w-md">
+              <AlertCircle className="w-4 h-4 text-muted-foreground mr-2 flex-shrink-0 mt-0.5" />
+              <div className="text-xs text-muted-foreground">
+                <p className="mb-1"><strong>Compatible con:</strong></p>
+                <ul className="list-disc pl-4 space-y-1">
+                  <li>Formato europeo (punto y coma como delimitador, coma como decimal)</li>
+                  <li>Archivos CSV exportados de Meta Ads, Google Ads</li>
+                  <li>Incluye todas las filas con datos numéricos</li>
+                </ul>
+              </div>
             </div>
           </>
         )}

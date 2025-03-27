@@ -18,9 +18,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
   const calculateMetrics = () => {
     console.log("Calculando métricas con", data.length, "registros");
     
-    // Debug para ver todos los estados de campaña
-    const campaignStatuses = data.map(item => item.campaign_name).filter(Boolean);
-    console.log("Estados de campaña encontrados:", [...new Set(campaignStatuses)]);
+    // Mostrar contenido de algunos registros para verificación
+    console.log("Muestra de los primeros 3 registros:", data.slice(0, 3));
     
     // Convertir y asegurar que todos los valores sean numéricos
     const ensureNumber = (value: any): number => {
@@ -29,6 +28,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       }
       
       if (typeof value === 'string') {
+        // Formato europeo: la coma es el separador decimal
         const parsed = parseFloat(value.replace(',', '.'));
         return !isNaN(parsed) ? parsed : 0;
       }
@@ -36,9 +36,14 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       return 0;
     };
     
-    // Calcular totales sumando todos los registros, independientemente del estado
+    // Verificar si hay campos requeridos en los datos
+    let hasMissingFields = false;
+    const requiredFields = ['impressions', 'clicks', 'conversions', 'cost', 'revenue'];
+    
+    // Calcular totales sumando todos los registros
     const totalImpressions = data.reduce((sum, item) => {
       const impressions = ensureNumber(item.impressions);
+      console.log(`Impresiones en registro: ${impressions}`);
       return sum + impressions;
     }, 0);
     
@@ -67,28 +72,18 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       ? (totalClicks / totalImpressions) * 100 
       : 0;
     
-    // Calcular ROI agregado o promedio según sea necesario
-    let averageROI;
-    
-    if (totalCost > 0) {
-      // Cálculo directo del ROI agregado
-      averageROI = ((totalRevenue - totalCost) / totalCost) * 100;
-    } else {
-      // Alternativa: promedio de ROIs individuales, filtrando valores no válidos
-      const roiValues = data
-        .filter(item => {
-          const roi = typeof item.roi === 'number' ? item.roi : 
-                    typeof item.roi === 'string' ? parseFloat(item.roi) : NaN;
-          return !isNaN(roi) && typeof roi === 'number';
-        })
-        .map(item => typeof item.roi === 'number' ? item.roi : parseFloat(item.roi));
+    const averageCPC = totalClicks > 0
+      ? totalCost / totalClicks
+      : 0;
       
-      if (roiValues.length > 0) {
-        averageROI = roiValues.reduce((sum, roi) => sum + roi, 0) / roiValues.length;
-      } else {
-        averageROI = 0;
-      }
-    }
+    const averageCPM = totalImpressions > 0
+      ? (totalCost / totalImpressions) * 1000
+      : 0;
+    
+    // Calcular ROI
+    const averageROI = totalCost > 0
+      ? ((totalRevenue - totalCost) / totalCost) * 100
+      : 0;
     
     // Log de depuración
     console.log("Métricas calculadas:", {
@@ -98,6 +93,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       totalCost,
       totalRevenue,
       overallCTR,
+      averageCPC,
+      averageCPM,
       averageROI
     });
     
@@ -107,6 +104,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       totalConversions,
       overallCTR,
       averageROI,
+      averageCPC,
+      averageCPM,
       totalCost,
       totalRevenue
     };
@@ -185,6 +184,30 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
             description={`Basado en ${formatCurrency(metrics.totalRevenue)} de ingresos`}
             delay={300}
           />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-100">
+          <h3 className="text-lg font-semibold mb-4">Métricas adicionales</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">CTR promedio:</span>
+              <span className="font-medium">{metrics.overallCTR.toFixed(2)}%</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">CPC promedio:</span>
+              <span className="font-medium">{metrics.averageCPC.toFixed(2)}€</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">CPM promedio:</span>
+              <span className="font-medium">{metrics.averageCPM.toFixed(2)}€</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Gasto total:</span>
+              <span className="font-medium">{formatCurrency(metrics.totalCost)}</span>
+            </div>
+          </div>
         </div>
       </div>
 
