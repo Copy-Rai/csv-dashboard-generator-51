@@ -1,4 +1,3 @@
-
 interface CampaignData {
   platform: string;
   campaign_name?: string;
@@ -12,6 +11,7 @@ interface CampaignData {
   cpc?: number;
   cpm?: number;
   roi?: number;
+  status?: string;
 }
 
 // Detector automático de delimitador
@@ -150,15 +150,24 @@ export const processCSV = (csvContent: string): CampaignData[] => {
 function processWithDelimiter(lines: string[], columnMap: Record<string, number>, delimiter: string): CampaignData[] {
   const results: CampaignData[] = [];
   
+  // Contador para depuración
+  let rowsProcessed = 0;
+  let rowsSkipped = 0;
+  let emptyDataRows = 0;
+  
   // Process each line of the CSV
   for (let i = 1; i < lines.length; i++) {
-    if (!lines[i].trim()) continue;
+    if (!lines[i].trim()) {
+      rowsSkipped++;
+      continue;
+    }
     
     const values = lines[i].split(delimiter).map(value => value.trim());
     
     // Si la línea tiene muy pocos valores, probablemente está mal formateada
     if (values.length < 3) {
       console.warn(`Saltando fila ${i} por tener menos de 3 valores`);
+      rowsSkipped++;
       continue;
     }
 
@@ -196,8 +205,20 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
       }
     }
     
+    // Extraer el posible estado de la campaña para filtrarlo después si es necesario
+    let campaignStatus = "";
+    if (columnMap.campaign_name !== undefined && values[columnMap.campaign_name]) {
+      const campaignName = values[columnMap.campaign_name].toLowerCase();
+      if (campaignName.includes("completed") || campaignName.includes("active") || 
+          campaignName.includes("inactive") || campaignName.includes("recently")) {
+        campaignStatus = campaignName.includes("completed") ? "completed" : 
+                         campaignName.includes("active") ? "active" : 
+                         campaignName.includes("recently") ? "recently_completed" : "inactive";
+      }
+    }
+    
     // Extraer o calcular las métricas principales
-    // Conversión de datos a números con manejo de formatos internacionales
+    // Mejorar la conversión de datos a números con manejo de formatos internacionales
     const parseNumeric = (value: string | undefined): number => {
       if (!value) return 0;
       
@@ -231,7 +252,7 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
       return isNaN(num) ? 0 : num;
     };
     
-    // Extracción de métricas principales
+    // Extracción de métricas principales, asegurando que obtenemos valores numéricos
     const impressions = columnMap.impressions !== undefined ? parseNumeric(values[columnMap.impressions]) : 0;
     const clicks = columnMap.clicks !== undefined ? parseNumeric(values[columnMap.clicks]) : 0;
     const conversions = columnMap.conversions !== undefined ? parseNumeric(values[columnMap.conversions]) : 0;
@@ -261,14 +282,16 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
       roi = ((revenue - cost) / cost) * 100;
     }
     
-    // Check if we have any numeric data on this row - skip if all zeros
+    // Check if we have any numeric data on this row
     const hasNumericData = impressions > 0 || clicks > 0 || conversions > 0 || cost > 0 || revenue > 0;
     
-    if (!hasNumericData && platform === "Unknown") {
-      continue; // Skip rows with no useful data
+    // IMPORTANTE: Ya no excluimos filas sin datos numéricos, solo registramos para depuración
+    if (!hasNumericData) {
+      emptyDataRows++;
+      // Aún procesamos la fila, pero la marcamos para depuración
     }
     
-    // Build campaign data
+    // Build campaign data with status for debugging
     const campaignData: CampaignData = {
       platform,
       campaign_name: columnMap.campaign_name !== undefined ? values[columnMap.campaign_name] : undefined,
@@ -281,18 +304,33 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
       ctr,
       cpc,
       cpm,
-      roi
+      roi,
+      status: campaignStatus // Guardamos el estado para depuración
     };
     
     results.push(campaignData);
+    rowsProcessed++;
   }
+  
+  // Log de estadísticas para depuración
+  console.log(`Filas procesadas: ${rowsProcessed}, Filas omitidas: ${rowsSkipped}, Filas sin datos: ${emptyDataRows}`);
   
   return results;
 }
 
 // Clean CSV data by extracting first parts of columns that may have multiple values
+// Ahora nos aseguramos de incluir todas las filas, independientemente del status
 export const cleanCSVData = (data: CampaignData[]): CampaignData[] => {
-  return data.map(item => {
+  // Log para depuración
+  console.log("Total de registros antes de limpieza:", data.length);
+  console.log("Resumen por estado:", data.reduce((acc, item) => {
+    const status = item.status || "undefined";
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>));
+  
+  // Ahora limpiamos cada elemento sin filtrar por estado
+  const cleanedData = data.map(item => {
     // Clean platform field if it contains semicolons or other separators
     let platform = item.platform;
     if (platform && (platform.includes(';') || platform.includes('|'))) {
@@ -304,6 +342,11 @@ export const cleanCSVData = (data: CampaignData[]): CampaignData[] => {
       platform,
     };
   });
+  
+  // Log de conteo de registros después de limpieza
+  console.log("Total de registros después de limpieza:", cleanedData.length);
+  
+  return cleanedData;
 };
 
 // Calculate key metrics from the processed data

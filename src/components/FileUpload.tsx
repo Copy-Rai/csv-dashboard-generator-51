@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Upload, FileText, AlertCircle, CheckCircle2, FileWarning } from "lucide-react";
@@ -15,6 +14,12 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
   const [fileName, setFileName] = useState<string | null>(null);
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
   const [hasWarnings, setHasWarnings] = useState(false);
+  const [processingStats, setProcessingStats] = useState<{
+    total: number;
+    active: number;
+    completed: number;
+    emptyData: number;
+  } | null>(null);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -55,7 +60,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
   }, []);
 
   const handleFile = (file: File) => {
-    // Permitir no solo archivos CSV sino también TSV, TXT, y XLS que pueden ser exportados como CSV
     if (!file.name.match(/\.(csv|txt|tsv|xls|xlsx)$/i)) {
       toast.error("Por favor sube un archivo CSV o similares (TXT, TSV, XLS)");
       return;
@@ -65,6 +69,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
     setIsProcessing(true);
     setProcessingStatus("Detectando formato del archivo...");
     setHasWarnings(false);
+    setProcessingStats(null);
     
     const reader = new FileReader();
     
@@ -74,36 +79,41 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
         
         setProcessingStatus("Identificando delimitadores y columnas...");
         
-        // Log de los primeros 500 caracteres para depuración
         console.log("Primeros 500 caracteres del archivo:", text.substring(0, 500));
         
         let data;
         
         try {
-          // Intentar procesar el CSV con nuestra función mejorada
           setProcessingStatus("Procesando formato europeo (punto y coma como delimitador, coma como decimal)...");
           data = processCSV(text);
           
-          // Filtrar y limpiar los datos
           setProcessingStatus("Limpiando y normalizando datos...");
           data = cleanCSVData(data);
           
-          // Verificar si tenemos datos suficientes
           if (!data || data.length === 0) {
             toast.error("No se pudieron extraer datos del archivo. Revisa el formato.");
             setIsProcessing(false);
             return;
           }
           
-          // Comprobar si hay advertencias (datos insuficientes)
-          if (data.some(item => 
-            (item.impressions === 0 && item.clicks === 0) || 
-            (item.cost === 0 && item.revenue === 0)
-          )) {
+          const stats = {
+            total: data.length,
+            active: data.filter(item => 
+              item.campaign_name?.toLowerCase().includes('active')).length,
+            completed: data.filter(item => 
+              item.campaign_name?.toLowerCase().includes('completed') || 
+              item.campaign_name?.toLowerCase().includes('recently_completed')).length,
+            emptyData: data.filter(item => 
+              (item.impressions === 0 && item.clicks === 0) || 
+              (item.cost === 0 && item.revenue === 0)).length
+          };
+          
+          setProcessingStats(stats);
+          
+          if (stats.emptyData > 0) {
             setHasWarnings(true);
           }
           
-          // Registro de datos procesados para verificación
           console.log("Datos procesados (primeros 3 registros):", data.slice(0, 3));
           console.log("Total de registros procesados:", data.length);
           
@@ -115,21 +125,20 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
         }
         
         if (data && data.length > 0) {
-          // Log de los datos procesados (limitado a 3 registros)
           console.log("Muestra de datos procesados:", data.slice(0, 3));
           
           setProcessingStatus("Generando insights y visualizaciones...");
           
           setTimeout(() => {
             if (hasWarnings) {
-              toast.success("Archivo procesado con algunas advertencias. Algunas columnas podrían faltar datos.");
+              toast.success(`Archivo procesado con ${processingStats?.emptyData || 0} filas con datos incompletos.`);
             } else {
-              toast.success("¡Archivo procesado correctamente!");
+              toast.success(`¡Archivo procesado correctamente! ${data.length} registros analizados.`);
             }
             onFileUploaded(data);
             setIsProcessing(false);
             setProcessingStatus(null);
-          }, 800); // Pequeño retraso para retroalimentación visual
+          }, 800);
         } else {
           throw new Error("Error al procesar los datos o conjunto de datos vacío");
         }
@@ -176,12 +185,25 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
               {hasWarnings ? "Archivo procesado con advertencias" : "¡Archivo listo!"}
             </p>
             <p className="text-sm text-muted-foreground mt-1">{fileName}</p>
+            
+            {processingStats && (
+              <div className="mt-4 bg-muted/50 rounded-lg p-4 text-sm">
+                <p><strong>Registros procesados:</strong> {processingStats.total}</p>
+                <p><strong>Campañas activas:</strong> {processingStats.active}</p>
+                <p><strong>Campañas completadas:</strong> {processingStats.completed}</p>
+                {hasWarnings && (
+                  <p className="text-amber-600"><strong>Filas con datos incompletos:</strong> {processingStats.emptyData}</p>
+                )}
+              </div>
+            )}
+            
             <Button 
               variant="outline" 
               className="mt-4"
               onClick={() => {
                 setFileName(null);
                 setHasWarnings(false);
+                setProcessingStats(null);
               }}
             >
               Elegir un archivo diferente
@@ -213,7 +235,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
             <div className="mt-4 px-4 py-2 bg-muted rounded-md flex items-center max-w-md">
               <AlertCircle className="w-4 h-4 text-muted-foreground mr-2 flex-shrink-0" />
               <p className="text-xs text-muted-foreground">
-                Compatible con formato europeo (punto y coma como delimitador, coma como decimal). El sistema detectará automáticamente el formato.
+                Compatible con formato europeo (punto y coma como delimitador, coma como decimal). El sistema incluirá todas las filas con datos, independientemente del estado de las campañas.
               </p>
             </div>
           </>

@@ -16,58 +16,90 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ data }) => {
   const calculateMetrics = () => {
+    console.log("Calculando métricas con", data.length, "registros");
+    
+    // Debug para ver todos los estados de campaña
+    const campaignStatuses = data.map(item => item.campaign_name).filter(Boolean);
+    console.log("Estados de campaña encontrados:", [...new Set(campaignStatuses)]);
+    
+    // Convertir y asegurar que todos los valores sean numéricos
+    const ensureNumber = (value: any): number => {
+      if (typeof value === 'number' && !isNaN(value)) {
+        return value;
+      }
+      
+      if (typeof value === 'string') {
+        const parsed = parseFloat(value.replace(',', '.'));
+        return !isNaN(parsed) ? parsed : 0;
+      }
+      
+      return 0;
+    };
+    
+    // Calcular totales sumando todos los registros, independientemente del estado
     const totalImpressions = data.reduce((sum, item) => {
-      const impressions = typeof item.impressions === 'number' 
-        ? item.impressions 
-        : parseFloat(item.impressions) || 0;
+      const impressions = ensureNumber(item.impressions);
       return sum + impressions;
     }, 0);
     
     const totalClicks = data.reduce((sum, item) => {
-      const clicks = typeof item.clicks === 'number' 
-        ? item.clicks 
-        : parseFloat(item.clicks) || 0;
+      const clicks = ensureNumber(item.clicks);
       return sum + clicks;
     }, 0);
     
     const totalConversions = data.reduce((sum, item) => {
-      const conversions = typeof item.conversions === 'number' 
-        ? item.conversions 
-        : parseFloat(item.conversions) || 0;
+      const conversions = ensureNumber(item.conversions);
       return sum + conversions;
     }, 0);
     
     const totalCost = data.reduce((sum, item) => {
-      const cost = typeof item.cost === 'number' 
-        ? item.cost 
-        : parseFloat(item.cost) || 0;
+      const cost = ensureNumber(item.cost);
       return sum + cost;
     }, 0);
     
     const totalRevenue = data.reduce((sum, item) => {
-      const revenue = typeof item.revenue === 'number' 
-        ? item.revenue 
-        : parseFloat(item.revenue) || 0;
+      const revenue = ensureNumber(item.revenue);
       return sum + revenue;
     }, 0);
     
+    // Calcular métricas derivadas
     const overallCTR = totalImpressions > 0 
       ? (totalClicks / totalImpressions) * 100 
       : 0;
-      
+    
+    // Calcular ROI agregado o promedio según sea necesario
     let averageROI;
     
-    const roiValues = data
-      .filter(item => typeof item.roi === 'number' || parseFloat(item.roi))
-      .map(item => typeof item.roi === 'number' ? item.roi : parseFloat(item.roi));
-      
-    if (roiValues.length > 0) {
-      averageROI = roiValues.reduce((sum, roi) => sum + roi, 0) / roiValues.length;
+    if (totalCost > 0) {
+      // Cálculo directo del ROI agregado
+      averageROI = ((totalRevenue - totalCost) / totalCost) * 100;
     } else {
-      averageROI = totalCost > 0 
-        ? ((totalRevenue - totalCost) / totalCost) * 100 
-        : 0;
+      // Alternativa: promedio de ROIs individuales, filtrando valores no válidos
+      const roiValues = data
+        .filter(item => {
+          const roi = typeof item.roi === 'number' ? item.roi : 
+                    typeof item.roi === 'string' ? parseFloat(item.roi) : NaN;
+          return !isNaN(roi) && typeof roi === 'number';
+        })
+        .map(item => typeof item.roi === 'number' ? item.roi : parseFloat(item.roi));
+      
+      if (roiValues.length > 0) {
+        averageROI = roiValues.reduce((sum, roi) => sum + roi, 0) / roiValues.length;
+      } else {
+        averageROI = 0;
+      }
     }
+    
+    // Log de depuración
+    console.log("Métricas calculadas:", {
+      totalImpressions,
+      totalClicks,
+      totalConversions,
+      totalCost,
+      totalRevenue,
+      overallCTR,
+      averageROI
+    });
     
     return {
       totalImpressions,
