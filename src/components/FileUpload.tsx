@@ -1,6 +1,5 @@
-
 import React, { useState, useRef } from 'react';
-import { UploadCloud, FileType, AlertCircle } from "lucide-react";
+import { UploadCloud, FileType, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -55,22 +54,17 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
           console.log(`📄 Contenido CSV cargado: ${csvContent.length} caracteres`);
           console.log(`📄 Primeras 100 caracteres: ${csvContent.substring(0, 100)}...`);
           
-          // Procesar el archivo CSV
           const processedData = processCSV(csvContent);
           console.log(`✅ Datos procesados: ${processedData.length} registros`);
           
-          // Limpieza adicional de los datos (NO filtramos, solo limpiamos)
           const cleanedData = cleanCSVData(processedData);
           console.log(`✅ Datos limpiados: ${cleanedData.length} registros`);
           
-          // Verificar las impresiones totales de los datos limpios
           const totalImpressions = cleanedData.reduce((sum, item) => sum + (item.impressions || 0), 0);
           console.log(`📊 TOTAL IMPRESIONES EN DATOS FINALES: ${totalImpressions}`);
           
-          // Callback con los datos procesados
           onFileUploaded(cleanedData);
           
-          // Mensaje de éxito
           toast.success(`Archivo procesado correctamente: ${cleanedData.length} registros`, {
             description: `Se han detectado ${totalImpressions.toLocaleString()} impresiones en total.`
           });
@@ -95,7 +89,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
         setIsLoading(false);
       };
       
-      // Leer el archivo como texto
       reader.readAsText(file);
       
     } catch (error) {
@@ -141,14 +134,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
     fileInputRef.current?.click();
   };
 
-  // Añadir función para limpiar caché y forzar recargar la página
   const forceRefresh = () => {
     console.log("🔄 Forzando recarga completa de la aplicación");
-    // Limpiar caché de sessionStorage o localStorage si existe
     sessionStorage.clear();
     localStorage.clear();
-    // Recargar la página completamente ignorando la caché
-    window.location.reload(true);
+    window.location.reload();
     toast.info("Recargando la aplicación", {
       description: "Se está limpiando la caché y recargando toda la aplicación."
     });
@@ -212,7 +202,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
               onClick={forceRefresh}
               className="text-primary border-primary hover:bg-primary/10"
             >
-              🔄 Forzar recarga
+              <RefreshCw className="mr-2 h-5 w-5" /> Forzar recarga
             </Button>
           </div>
           
