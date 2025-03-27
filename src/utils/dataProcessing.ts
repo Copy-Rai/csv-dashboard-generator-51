@@ -1,4 +1,3 @@
-
 interface CampaignData {
   platform: string;
   campaign_name?: string;
@@ -27,7 +26,7 @@ const detectDelimiter = (csvContent: string): string => {
   const semicolonCount = (firstLine.match(/;/g) || []).length;
   const tabCount = (firstLine.match(/\t/g) || []).length;
   
-  console.log(`Delimitadores detectados: , (${commaCount}), ; (${semicolonCount}), \\t (${tabCount})`);
+  console.log(`⚙️ Delimitadores detectados: , (${commaCount}), ; (${semicolonCount}), \\t (${tabCount})`);
   
   // Preferimos punto y coma cuando hay más o igual cantidad que comas
   // ya que con formato europeo, las comas pueden estar en los números
@@ -64,7 +63,7 @@ const parseEuropeanNumeric = (value: string | undefined): number => {
   
   // Si no es un número válido, devolver 0
   if (isNaN(num)) {
-    console.warn(`Valor no numérico detectado: ${value} -> ${cleaned}`);
+    console.warn(`⚠️ Valor no numérico detectado: ${value} -> ${cleaned}`);
     return 0;
   }
   
@@ -74,17 +73,19 @@ const parseEuropeanNumeric = (value: string | undefined): number => {
 // Process CSV content to structured data with enhanced flexibility
 export const processCSV = (csvContent: string): CampaignData[] => {
   try {
-    // Intentamos detectar y corregir problemas de codificación
-    let normalizedContent = csvContent;
+    console.log("🔄 PROCESANDO CSV - VERSIÓN: 2.0.1");
+    // Conteo de líneas para verificación
+    const lineCount = csvContent.split('\n').length;
+    console.log(`📋 Archivo CSV recibido con ${lineCount} líneas`);
     
     // Detectamos el delimitador automáticamente, preferentemente para formato europeo
-    const delimiter = detectDelimiter(normalizedContent);
-    console.log(`Delimitador seleccionado: "${delimiter}"`);
+    const delimiter = detectDelimiter(csvContent);
+    console.log(`🔧 Delimitador seleccionado: "${delimiter}"`);
     
-    const lines = normalizedContent.split(/\r?\n/);
+    const lines = csvContent.split(/\r?\n/);
     let headers = lines[0].split(delimiter).map(header => normalizeText(header.trim()));
     
-    console.log("Encabezados detectados:", headers);
+    console.log("📊 Encabezados detectados:", headers);
     
     // Handle empty lines and remove any blank headers
     const filteredLines = lines.filter(line => line.trim() !== '');
@@ -161,19 +162,23 @@ export const processCSV = (csvContent: string): CampaignData[] => {
     
     return processWithDelimiter(filteredLines, columnMap, delimiter);
   } catch (error) {
-    console.error("Error parsing CSV:", error);
+    console.error("❌ Error parsing CSV:", error);
     throw new Error("Error processing CSV data. Please check the format.");
   }
 };
 
 // Helper function to process with a specific delimiter
 function processWithDelimiter(lines: string[], columnMap: Record<string, number>, delimiter: string): CampaignData[] {
+  console.log("🔄 Iniciando procesamiento con delimitador:", delimiter);
+  console.log("🗺️ Usando mapa de columnas:", columnMap);
+  
   const results: CampaignData[] = [];
   
   // Contador para depuración
   let rowsProcessed = 0;
   let rowsSkipped = 0;
   let emptyDataRows = 0;
+  let totalImpressionsFound = 0;
   
   // Process each line of the CSV
   for (let i = 1; i < lines.length; i++) {
@@ -186,7 +191,7 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
     
     // Si la línea tiene muy pocos valores, probablemente está mal formateada
     if (values.length < 3) {
-      console.warn(`Saltando fila ${i} por tener menos de 3 valores`);
+      console.warn(`⚠️ Saltando fila ${i} por tener menos de 3 valores`);
       rowsSkipped++;
       continue;
     }
@@ -236,6 +241,13 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
     // Ensure we use link_clicks when available, otherwise fallback to regular clicks
     // Extracting metrics with improved European number parsing
     const impressions = columnMap.impressions !== undefined ? parseEuropeanNumeric(values[columnMap.impressions]) : 0;
+    totalImpressionsFound += impressions;
+    
+    // Si es uno de los primeros 5 registros o un múltiplo de 10, mostrar detalle
+    if (i <= 5 || i % 10 === 0) {
+      console.log(`📝 Fila ${i}: encontradas ${impressions} impresiones. Valor original: "${values[columnMap.impressions]}"`);
+    }
+    
     const rawClicks = columnMap.clicks !== undefined ? parseEuropeanNumeric(values[columnMap.clicks]) : 0;
     const linkClicks = columnMap.link_clicks !== undefined ? parseEuropeanNumeric(values[columnMap.link_clicks]) : 0;
     const clicks = linkClicks > 0 ? linkClicks : rawClicks; // Prefer link_clicks when available
@@ -276,7 +288,7 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
     // Calculate ROI
     const roi = cost > 0 ? ((revenue - cost) / cost) * 100 : 0;
     
-    // IMPORTANTE: Incluimos todas las filas, incluso si tienen datos incompletos
+    // IMPORTANTE: NO filtramos por ningún criterio, incluimos TODOS los registros
     
     // Campaign data object with metrics
     const campaignData: CampaignData = {
@@ -298,39 +310,35 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
       status: campaignStatus // Guardamos el estado para depuración
     };
     
-    // Log para depuración
-    if (i <= 5 || i % 100 === 0) {
-      console.log(`Fila ${i} procesada:`, {
-        platform,
-        campaign: campaignData.campaign_name,
-        adSet: campaignData.ad_set_name,
-        impresiones: impressions,
-        clics: clicks,
-        linkClics: linkClicks,
-        conversiones: conversions,
-        coste: cost,
-        amountSpentEur: amountSpentEur
-      });
-    }
-    
     results.push(campaignData);
     rowsProcessed++;
+    
+    // Log periódico del progreso
+    if (i % 20 === 0 || i === lines.length - 1) {
+      console.log(`🔄 Progreso: ${i}/${lines.length-1} filas procesadas. Total impresiones hasta ahora: ${totalImpressionsFound}`);
+    }
   }
   
   // Log de estadísticas para depuración
-  console.log(`Filas procesadas: ${rowsProcessed}, Filas omitidas: ${rowsSkipped}, Filas sin datos: ${emptyDataRows}`);
+  console.log(`📊 FINALIZADO: Filas procesadas: ${rowsProcessed}, Filas omitidas: ${rowsSkipped}, Filas sin datos: ${emptyDataRows}`);
+  console.log(`📊 FINALIZADO: Total de impresiones encontradas: ${totalImpressionsFound}`);
   
-  // IMPORTANTE: Agregamos un log detallado de las impresiones totales antes de devolver los resultados
-  const totalImpressions = results.reduce((sum, item) => sum + item.impressions, 0);
-  console.log(`Total de impresiones en los datos procesados: ${totalImpressions}`);
+  // IMPORTANTE: Verificación final de impresiones totales
+  const verifiedTotalImpressions = results.reduce((sum, item) => sum + item.impressions, 0);
+  console.log(`📊 VERIFICACIÓN FINAL: Total de impresiones en los datos procesados: ${verifiedTotalImpressions}`);
+  
+  // Verificación de que todas las filas procesadas tengan algún valor
+  const rowsWithZeroImpressions = results.filter(item => item.impressions === 0).length;
+  const rowsWithImpressions = results.filter(item => item.impressions > 0).length;
+  console.log(`📊 Filas con 0 impresiones: ${rowsWithZeroImpressions}, Filas con impresiones: ${rowsWithImpressions}`);
   
   return results;
 }
 
-// Clean CSV data - asegura que todos los registros se incluyan sin filtrar por estado
+// Clean CSV data - NO FILTRAMOS POR ESTADO, INCLUIMOS TODO
 export const cleanCSVData = (data: CampaignData[]): CampaignData[] => {
-  // Log para depuración
-  console.log("Total de registros antes de limpieza:", data.length);
+  console.log("🧹 LIMPIEZA DE DATOS - VERSIÓN: 2.0.1");
+  console.log("🧹 Total de registros antes de limpieza:", data.length);
   
   // Mostrar distribución por plataforma
   const platforms = data.reduce((acc: Record<string, number>, item) => {
@@ -339,19 +347,25 @@ export const cleanCSVData = (data: CampaignData[]): CampaignData[] => {
     return acc;
   }, {});
   
-  console.log("Distribución por plataforma:", platforms);
+  console.log("📊 Distribución por plataforma:", platforms);
   
   // Mostrar la suma total de impresiones antes de la limpieza para verificar
   const totalImpressionsBeforeCleaning = data.reduce((sum, item) => sum + item.impressions, 0);
-  console.log(`Total de impresiones antes de limpieza: ${totalImpressionsBeforeCleaning}`);
+  console.log(`📊 Total de impresiones antes de limpieza: ${totalImpressionsBeforeCleaning}`);
   
-  // Verificar si hay campañas con status 'inactive' que tengan impresiones
-  const inactiveWithImpressions = data.filter(item => 
-    item.status === 'inactive' && item.impressions > 0
-  );
-  console.log(`Campañas inactivas con impresiones: ${inactiveWithImpressions.length}`);
+  // Verificar si hay campañas con status específicos que tengan impresiones
+  const statusCounts: Record<string, { count: number, impressions: number }> = {};
+  data.forEach(item => {
+    const status = item.status || "sin_estado";
+    if (!statusCounts[status]) {
+      statusCounts[status] = { count: 0, impressions: 0 };
+    }
+    statusCounts[status].count++;
+    statusCounts[status].impressions += item.impressions;
+  });
+  console.log("📊 Conteo por estados:", statusCounts);
   
-  // ¡IMPORTANTE! Ya no filtramos por estado, solo limpiamos los datos
+  // ¡IMPORTANTE! NUNCA FILTRAMOS, solo limpiamos datos como espacios o formatos incorrectos
   const cleanedData = data.map(item => {
     // Clean platform field if it contains semicolons or other separators
     let platform = item.platform;
@@ -367,10 +381,10 @@ export const cleanCSVData = (data: CampaignData[]): CampaignData[] => {
   
   // Mostrar la suma total de impresiones después de la limpieza para verificar
   const totalImpressionsAfterCleaning = cleanedData.reduce((sum, item) => sum + item.impressions, 0);
-  console.log(`Total de impresiones después de limpieza: ${totalImpressionsAfterCleaning}`);
+  console.log(`📊 Total de impresiones después de limpieza: ${totalImpressionsAfterCleaning}`);
   
   // Log de conteo de registros después de limpieza
-  console.log("Total de registros después de limpieza:", cleanedData.length);
+  console.log("🧹 Total de registros después de limpieza:", cleanedData.length);
   
   return cleanedData;
 };

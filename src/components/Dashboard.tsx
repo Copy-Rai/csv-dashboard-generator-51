@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Eye, MousePointer, ArrowRightLeft, DollarSign, MessageCircle, FileText } from "lucide-react";
 import MetricCard from './MetricCard';
 import ChartSection from './ChartSection';
@@ -15,18 +15,35 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ data }) => {
+  // Efecto para verificar los datos cuando el componente carga
+  useEffect(() => {
+    console.log("🔄 DASHBOARD RECARGADO - Verificando datos recibidos:", data.length, "registros");
+    // Imprimir el total de impresiones sin procesar
+    const rawTotal = data.reduce((sum, item) => sum + (Number(item.impressions) || 0), 0);
+    console.log("🔢 TOTAL IMPRESIONES SIN PROCESAR:", rawTotal);
+  }, [data]);
+
   const calculateMetrics = () => {
-    console.log("Calculando métricas con", data.length, "registros");
+    console.log("⚙️ RECALCULANDO MÉTRICAS - VERSIÓN: 2.0.1");
+    console.log("📊 Calculando métricas con", data.length, "registros");
     
     // Mostrar contenido de algunos registros para verificación
-    console.log("Muestra de los primeros 3 registros:", data.slice(0, 3));
+    console.log("🔍 Muestra de los primeros 3 registros:", JSON.stringify(data.slice(0, 3), null, 2));
     
     // Verificamos las impresiones totales antes de cualquier operación
-    const rawTotalImpressions = data.reduce((sum, item) => sum + (item.impressions || 0), 0);
-    console.log("Impresiones totales antes de procesar:", rawTotalImpressions);
+    const rawTotalImpressions = data.reduce((sum, item) => {
+      const val = typeof item.impressions === 'number' ? item.impressions : 
+                 (item.impressions ? Number(item.impressions) : 0);
+      return sum + val;
+    }, 0);
+    console.log("📈 Impresiones totales antes de procesar:", rawTotalImpressions);
     
     // Convertir y asegurar que todos los valores sean numéricos
     const ensureNumber = (value: any): number => {
+      if (value === null || value === undefined) {
+        return 0;
+      }
+      
       if (typeof value === 'number' && !isNaN(value)) {
         return value;
       }
@@ -43,12 +60,12 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
     // Calcular totales sumando todos los registros sin filtrar por estado
     const totalImpressions = data.reduce((sum, item) => {
       const impressions = ensureNumber(item.impressions);
-      console.log(`Registro con ${impressions} impresiones:`, item.campaign_name || "Sin nombre");
+      console.log(`📝 Registro con ${impressions} impresiones:`, item.campaign_name || "Sin nombre");
       return sum + impressions;
     }, 0);
     
     // Log para verificar las impresiones totales después de procesar
-    console.log("Impresiones totales después de procesar:", totalImpressions);
+    console.log("📊 Impresiones totales después de procesar:", totalImpressions);
     
     // Preferimos link_clicks cuando está disponible
     const totalClicks = data.reduce((sum, item) => {
@@ -91,7 +108,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       : 0;
     
     // Log de depuración
-    console.log("Métricas calculadas:", {
+    console.log("✅ Métricas calculadas:", {
       totalImpressions,
       totalClicks,
       totalConversions,

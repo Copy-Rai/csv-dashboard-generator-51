@@ -1,285 +1,234 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
+import { UploadCloud, FileType, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, AlertCircle, CheckCircle2, FileWarning } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { processCSV, cleanCSVData } from "@/utils/dataProcessing";
 
 interface FileUploadProps {
-  onFileUploaded: (data: any) => void;
+  onFileUploaded: (data: any[]) => void;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [processingStatus, setProcessingStatus] = useState<string | null>(null);
-  const [hasWarnings, setHasWarnings] = useState(false);
-  const [processingStats, setProcessingStats] = useState<{
-    total: number;
-    active: number;
-    completed: number;
-    recentlyCompleted: number;
-    emptyData: number;
-    delimiters?: string;
-    numberFormat?: string;
-  } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleDragEnter = useCallback((e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.stopPropagation();
     setIsDragging(true);
-  }, []);
+  };
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleDragLeave = () => {
     setIsDragging(false);
-  }, []);
+  };
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isDragging) {
-      setIsDragging(true);
+  const resetState = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
-  }, [isDragging]);
-
-  const handleFileDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+    setError(null);
+    setIsLoading(false);
     setIsDragging(false);
-    
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      handleFile(files[0]);
-    }
-  }, []);
+  };
 
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      handleFile(files[0]);
-    }
-  }, []);
-
-  const handleFile = (file: File) => {
-    if (!file.name.match(/\.(csv|txt|tsv|xls|xlsx)$/i)) {
-      toast.error("Por favor sube un archivo CSV o similares (TXT, TSV, XLS)");
-      return;
-    }
+  const processFile = async (file: File) => {
+    setIsLoading(true);
+    setError(null);
     
-    setFileName(file.name);
-    setIsProcessing(true);
-    setProcessingStatus("Detectando formato del archivo...");
-    setHasWarnings(false);
-    setProcessingStats(null);
-    
-    const reader = new FileReader();
-    
-    reader.onload = (event) => {
-      try {
-        const text = event.target?.result as string;
-        
-        setProcessingStatus("Identificando delimitadores y columnas...");
-        
-        console.log("Primeros 500 caracteres del archivo:", text.substring(0, 500));
-        
-        let data;
-        
+    try {
+      console.log("🔄 INICIO PROCESAMIENTO DE ARCHIVO - VERSIÓN: 2.0.1");
+      console.log(`📁 Archivo recibido: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
+      
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
         try {
-          // Detectar delimitadores para mostrar en UI
-          const commaCount = (text.split('\n')[0].match(/,/g) || []).length;
-          const semicolonCount = (text.split('\n')[0].match(/;/g) || []).length;
-          const delimiterInfo = semicolonCount > commaCount ? 
-            "punto y coma (formato europeo)" : "coma (formato internacional)";
-          
-          const numberFormat = semicolonCount > commaCount ? 
-            "europeo (coma como decimal)" : "internacional (punto como decimal)";
-          
-          setProcessingStatus(`Procesando archivo con formato ${numberFormat} y delimitador ${delimiterInfo}...`);
-          
-          data = processCSV(text);
-          
-          setProcessingStatus("Normalizando datos y calculando métricas...");
-          data = cleanCSVData(data);
-          
-          if (!data || data.length === 0) {
-            toast.error("No se pudieron extraer datos del archivo. Revisa el formato.");
-            setIsProcessing(false);
-            return;
+          if (!e.target?.result) {
+            throw new Error("No se pudo leer el archivo");
           }
           
-          const stats = {
-            total: data.length,
-            active: data.filter(item => 
-              item.status === 'active' || 
-              item.campaign_name?.toLowerCase()?.includes('active')).length,
-            completed: data.filter(item => 
-              item.status === 'completed' || 
-              item.campaign_name?.toLowerCase()?.includes('completed')).length,
-            recentlyCompleted: data.filter(item => 
-              item.status === 'recently_completed' || 
-              item.campaign_name?.toLowerCase()?.includes('recently')).length,
-            emptyData: data.filter(item => 
-              (item.impressions === 0 && item.clicks === 0) || 
-              (item.cost === 0 && item.revenue === 0)).length,
-            delimiters: delimiterInfo,
-            numberFormat: numberFormat
-          };
+          const csvContent = e.target.result as string;
+          console.log(`📄 Contenido CSV cargado: ${csvContent.length} caracteres`);
+          console.log(`📄 Primeras 100 caracteres: ${csvContent.substring(0, 100)}...`);
           
-          setProcessingStats(stats);
+          // Procesar el archivo CSV
+          const processedData = processCSV(csvContent);
+          console.log(`✅ Datos procesados: ${processedData.length} registros`);
           
-          if (stats.emptyData > 0) {
-            setHasWarnings(true);
-          }
+          // Limpieza adicional de los datos (NO filtramos, solo limpiamos)
+          const cleanedData = cleanCSVData(processedData);
+          console.log(`✅ Datos limpiados: ${cleanedData.length} registros`);
           
-          console.log("Datos procesados (primeros 3 registros):", data.slice(0, 3));
-          console.log("Total de registros procesados:", data.length);
+          // Verificar las impresiones totales de los datos limpios
+          const totalImpressions = cleanedData.reduce((sum, item) => sum + (item.impressions || 0), 0);
+          console.log(`📊 TOTAL IMPRESIONES EN DATOS FINALES: ${totalImpressions}`);
           
-        } catch (processingError) {
-          console.error("Error con el procesamiento:", processingError);
-          toast.error("Error al procesar el archivo. El formato parece no ser compatible.");
-          setIsProcessing(false);
-          return;
+          // Callback con los datos procesados
+          onFileUploaded(cleanedData);
+          
+          // Mensaje de éxito
+          toast.success(`Archivo procesado correctamente: ${cleanedData.length} registros`, {
+            description: `Se han detectado ${totalImpressions.toLocaleString()} impresiones en total.`
+          });
+          
+          resetState();
+        } catch (error) {
+          console.error("❌ Error procesando CSV:", error);
+          setError(error instanceof Error ? error.message : "Error desconocido procesando el archivo");
+          toast.error("Error al procesar el archivo", {
+            description: error instanceof Error ? error.message : "Revisa que el formato sea correcto"
+          });
+          setIsLoading(false);
         }
-        
-        if (data && data.length > 0) {
-          console.log("Muestra de datos procesados:", data.slice(0, 3));
-          
-          setProcessingStatus("Generando insights y visualizaciones...");
-          
-          setTimeout(() => {
-            if (hasWarnings) {
-              toast.success(`Archivo procesado con ${processingStats?.emptyData || 0} filas con datos incompletos.`);
-            } else {
-              toast.success(`¡Archivo procesado correctamente! ${data.length} registros analizados.`);
-            }
-            onFileUploaded(data);
-            setIsProcessing(false);
-            setProcessingStatus(null);
-          }, 800);
-        } else {
-          throw new Error("Error al procesar los datos o conjunto de datos vacío");
-        }
-      } catch (error) {
-        console.error("Error al leer el archivo:", error);
-        toast.error("Error al procesar el archivo. Por favor revisa el formato.");
-        setIsProcessing(false);
-        setProcessingStatus(null);
+      };
+      
+      reader.onerror = () => {
+        console.error("❌ Error leyendo el archivo");
+        setError("Error al leer el archivo");
+        toast.error("Error al leer el archivo", {
+          description: "No se pudo acceder al contenido del archivo."
+        });
+        setIsLoading(false);
+      };
+      
+      // Leer el archivo como texto
+      reader.readAsText(file);
+      
+    } catch (error) {
+      console.error("❌ Error general:", error);
+      setError(error instanceof Error ? error.message : "Error desconocido");
+      toast.error("Error al procesar el archivo", {
+        description: error instanceof Error ? error.message : "Ha ocurrido un error inesperado"
+      });
+      setIsLoading(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const { files } = e.dataTransfer;
+    
+    if (files.length) {
+      const file = files[0];
+      
+      if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+        setError("Por favor, sube un archivo CSV válido");
+        toast.error("Formato de archivo no válido", {
+          description: "Solo se aceptan archivos CSV."
+        });
+        return;
       }
-    };
+      
+      await processFile(file);
+    }
+  };
+
+  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { files } = e.target;
     
-    reader.onerror = () => {
-      toast.error("Error al leer el archivo");
-      setIsProcessing(false);
-      setProcessingStatus(null);
-    };
-    
-    reader.readAsText(file);
+    if (files && files.length) {
+      await processFile(files[0]);
+    }
+  };
+
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Añadir función para limpiar caché y forzar recargar la página
+  const forceRefresh = () => {
+    console.log("🔄 Forzando recarga completa de la aplicación");
+    // Limpiar caché de sessionStorage o localStorage si existe
+    sessionStorage.clear();
+    localStorage.clear();
+    // Recargar la página completamente ignorando la caché
+    window.location.reload(true);
+    toast.info("Recargando la aplicación", {
+      description: "Se está limpiando la caché y recargando toda la aplicación."
+    });
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto my-8 animate-fade-in">
-      <div
-        className={`upload-dropzone ${isDragging ? 'upload-dropzone-active' : ''}`}
-        onDragEnter={handleDragEnter}
-        onDragLeave={handleDragLeave}
+    <div className="w-full max-w-2xl mx-auto mb-10">
+      <Card
+        className={`
+          relative border-2 border-dashed rounded-lg p-8
+          ${isDragging ? 'border-primary bg-primary/5' : 'border-gray-200 bg-white'}
+          transition-all duration-300 ease-in-out
+        `}
         onDragOver={handleDragOver}
-        onDrop={handleFileDrop}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
       >
-        {isProcessing ? (
-          <div className="text-center">
-            <div className="inline-block w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
-            <p className="text-lg font-medium">{processingStatus || "Procesando archivo..."}</p>
-            <p className="text-sm text-muted-foreground mt-1">{fileName}</p>
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          accept=".csv"
+          onChange={handleFileInputChange}
+        />
+        
+        <div className="flex flex-col items-center justify-center min-h-52 space-y-5 text-center">
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center bg-primary/10 transition-all duration-300 ${isDragging ? 'bg-primary/20 scale-110' : ''}`}>
+            <UploadCloud className={`h-8 w-8 text-primary ${isDragging ? 'scale-110' : ''}`} />
           </div>
-        ) : fileName ? (
-          <div className="text-center">
-            {hasWarnings ? (
-              <FileWarning className="mx-auto h-12 w-12 text-amber-500 mb-4" />
-            ) : (
-              <CheckCircle2 className="mx-auto h-12 w-12 text-green-500 mb-4" />
-            )}
-            <p className="text-lg font-medium">
-              {hasWarnings ? "Archivo procesado con advertencias" : "¡Archivo listo!"}
+          
+          <div className="space-y-2">
+            <h3 className="text-lg font-medium">Arrastra tu archivo CSV o haz clic para subir</h3>
+            <p className="text-muted-foreground max-w-sm mx-auto">
+              Sube tu archivo CSV con los datos de tus campañas de Facebook, Google Ads, etc.
             </p>
-            <p className="text-sm text-muted-foreground mt-1">{fileName}</p>
-            
-            {processingStats && (
-              <div className="mt-4 bg-muted/50 rounded-lg p-4 text-sm">
-                <p><strong>Registros procesados:</strong> {processingStats.total}</p>
-                {processingStats.active > 0 && (
-                  <p><strong>Campañas activas:</strong> {processingStats.active}</p>
-                )}
-                {processingStats.completed > 0 && (
-                  <p><strong>Campañas completadas:</strong> {processingStats.completed}</p>
-                )}
-                {processingStats.recentlyCompleted > 0 && (
-                  <p><strong>Campañas recientes:</strong> {processingStats.recentlyCompleted}</p>
-                )}
-                {processingStats.delimiters && (
-                  <p><strong>Delimitador detectado:</strong> {processingStats.delimiters}</p>
-                )}
-                {processingStats.numberFormat && (
-                  <p><strong>Formato numérico:</strong> {processingStats.numberFormat}</p>
-                )}
-                {hasWarnings && (
-                  <p className="text-amber-600"><strong>Filas con datos incompletos:</strong> {processingStats.emptyData}</p>
-                )}
-              </div>
-            )}
+          </div>
+          
+          <div className="flex gap-4">
+            <Button
+              variant="default"
+              size="lg"
+              className="relative overflow-hidden"
+              onClick={handleButtonClick}
+              disabled={isLoading}
+            >
+              <span className={`transition-all duration-200 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
+                <FileType className="mr-2 h-5 w-5" />
+                Seleccionar archivo CSV
+              </span>
+              
+              {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+                </div>
+              )}
+            </Button>
             
             <Button 
               variant="outline" 
-              className="mt-4"
-              onClick={() => {
-                setFileName(null);
-                setHasWarnings(false);
-                setProcessingStats(null);
-              }}
+              size="lg" 
+              onClick={forceRefresh}
+              className="text-primary border-primary hover:bg-primary/10"
             >
-              Elegir un archivo diferente
+              🔄 Forzar recarga
             </Button>
           </div>
-        ) : (
-          <>
-            <div className="p-4 rounded-full bg-secondary text-primary mb-4">
-              <Upload className="w-8 h-8" />
-            </div>
-            <h3 className="text-lg font-medium mb-1">Arrastra y suelta tu archivo CSV aquí</h3>
-            <p className="text-sm text-muted-foreground mb-4">o haz clic para buscar archivos</p>
-            
-            <input
-              type="file"
-              id="file-upload"
-              className="hidden"
-              accept=".csv,.txt,.tsv,.xls,.xlsx"
-              onChange={handleFileInput}
-            />
-            <label htmlFor="file-upload">
-              <Button variant="outline" className="cursor-pointer" asChild>
-                <span>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Buscar archivos
-                </span>
-              </Button>
-            </label>
-            <div className="mt-4 px-4 py-3 bg-muted rounded-md flex items-start max-w-md">
-              <AlertCircle className="w-4 h-4 text-muted-foreground mr-2 flex-shrink-0 mt-0.5" />
-              <div className="text-xs text-muted-foreground">
-                <p className="mb-1"><strong>Compatible con:</strong></p>
-                <ul className="list-disc pl-4 space-y-1">
-                  <li>Formato europeo (punto y coma como delimitador, coma como decimal)</li>
-                  <li>Formato internacional (coma como delimitador, punto como decimal)</li>
-                  <li>Archivos CSV exportados de Meta Ads, Google Ads, X/Twitter</li>
-                  <li>Identificación automática de plataformas y columnas</li>
-                </ul>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+          
+          <p className="text-sm text-muted-foreground">
+            Formato soportado: CSV (Soporta formato europeo con , como separador decimal)
+          </p>
+        </div>
+      </Card>
+      
+      {error && (
+        <Alert variant="destructive" className="mt-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 };
