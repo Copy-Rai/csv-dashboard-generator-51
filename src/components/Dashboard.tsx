@@ -17,14 +17,27 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ data }) => {
   // Efecto para verificar los datos cuando el componente carga
   useEffect(() => {
-    console.log("🔄 DASHBOARD RECARGADO - Verificando datos recibidos:", data.length, "registros");
-    // Imprimir el total de impresiones sin procesar
-    const rawTotal = data.reduce((sum, item) => sum + (Number(item.impressions) || 0), 0);
-    console.log("🔢 TOTAL IMPRESIONES SIN PROCESAR:", rawTotal);
+    console.log("🔄 DASHBOARD RECARGADO - VERSIÓN: 2.0.2");
+    console.log("📊 Datos recibidos:", data.length, "registros");
+    
+    // Imprimir impresiones por cada registro para verificar el total
+    let totalImps = 0;
+    data.forEach((item, index) => {
+      const imp = typeof item.impressions === 'number' ? item.impressions : 
+                 (item.impressions ? Number(item.impressions) : 0);
+      totalImps += imp;
+      
+      // Mostrar solo algunos registros para no saturar la consola
+      if (index < 10 || index % 50 === 0 || imp > 10000) {
+        console.log(`📄 Registro ${index}: ${imp} impresiones - Campaña: ${item.campaign_name || 'Sin nombre'}`);
+      }
+    });
+    
+    console.log("🔢 TOTAL IMPRESIONES VERIFICACIÓN INICIAL:", totalImps);
   }, [data]);
 
   const calculateMetrics = () => {
-    console.log("⚙️ RECALCULANDO MÉTRICAS - VERSIÓN: 2.0.1");
+    console.log("⚙️ RECALCULANDO MÉTRICAS - VERSIÓN: 2.0.2");
     console.log("📊 Calculando métricas con", data.length, "registros");
     
     // Mostrar contenido de algunos registros para verificación
@@ -34,9 +47,10 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
     const rawTotalImpressions = data.reduce((sum, item) => {
       const val = typeof item.impressions === 'number' ? item.impressions : 
                  (item.impressions ? Number(item.impressions) : 0);
+      console.log(`📊 Sumando impresiones: ${val} de campaña: ${item.campaign_name || 'Sin nombre'}`);
       return sum + val;
     }, 0);
-    console.log("📈 Impresiones totales antes de procesar:", rawTotalImpressions);
+    console.log("📈 Impresiones totales verificación inicial:", rawTotalImpressions);
     
     // Convertir y asegurar que todos los valores sean numéricos
     const ensureNumber = (value: any): number => {
@@ -57,10 +71,16 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       return 0;
     };
     
-    // Calcular totales sumando todos los registros sin filtrar por estado
-    const totalImpressions = data.reduce((sum, item) => {
+    // Calcular totales sumando todos los registros sin excepciones
+    let acumulador = 0;
+    const totalImpressions = data.reduce((sum, item, index) => {
       const impressions = ensureNumber(item.impressions);
-      console.log(`📝 Registro con ${impressions} impresiones:`, item.campaign_name || "Sin nombre");
+      acumulador += impressions;
+      
+      // Log para cada campaña con muchas impresiones para verificar
+      if (impressions > 5000 || index < 5 || index % 100 === 0) {
+        console.log(`📝 [${index}] ${item.campaign_name || "Sin nombre"}: ${impressions} impresiones (Acumulado: ${acumulador})`);
+      }
       return sum + impressions;
     }, 0);
     

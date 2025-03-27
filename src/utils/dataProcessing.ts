@@ -73,7 +73,7 @@ const parseEuropeanNumeric = (value: string | undefined): number => {
 // Process CSV content to structured data with enhanced flexibility
 export const processCSV = (csvContent: string): CampaignData[] => {
   try {
-    console.log("🔄 PROCESANDO CSV - VERSIÓN: 2.0.1");
+    console.log("🔄 PROCESANDO CSV - VERSIÓN: 2.0.2");
     // Conteo de líneas para verificación
     const lineCount = csvContent.split('\n').length;
     console.log(`📋 Archivo CSV recibido con ${lineCount} líneas`);
@@ -226,7 +226,7 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
       }
     }
     
-    // Extraer el posible estado de la campaña para filtrarlo después si es necesario
+    // Extraer el posible estado de la campaña - solo para registro, NO para filtrar
     let campaignStatus = "";
     if (columnMap.campaign_name !== undefined && values[columnMap.campaign_name]) {
       const campaignName = values[columnMap.campaign_name].toLowerCase();
@@ -238,13 +238,12 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
       }
     }
     
-    // Ensure we use link_clicks when available, otherwise fallback to regular clicks
     // Extracting metrics with improved European number parsing
     const impressions = columnMap.impressions !== undefined ? parseEuropeanNumeric(values[columnMap.impressions]) : 0;
     totalImpressionsFound += impressions;
     
     // Si es uno de los primeros 5 registros o un múltiplo de 10, mostrar detalle
-    if (i <= 5 || i % 10 === 0) {
+    if (i <= 5 || i % 10 === 0 || impressions > 10000) {
       console.log(`📝 Fila ${i}: encontradas ${impressions} impresiones. Valor original: "${values[columnMap.impressions]}"`);
     }
     
@@ -288,8 +287,7 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
     // Calculate ROI
     const roi = cost > 0 ? ((revenue - cost) / cost) * 100 : 0;
     
-    // IMPORTANTE: NO filtramos por ningún criterio, incluimos TODOS los registros
-    
+    // IMPORTANTE: Incluimos TODOS los registros sin filtrar por estado u otras condiciones
     // Campaign data object with metrics
     const campaignData: CampaignData = {
       platform,
@@ -307,7 +305,7 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
       cpc,
       cpm,
       roi,
-      status: campaignStatus // Guardamos el estado para depuración
+      status: campaignStatus // Guardamos el estado solo para referencia
     };
     
     results.push(campaignData);
@@ -335,9 +333,9 @@ function processWithDelimiter(lines: string[], columnMap: Record<string, number>
   return results;
 }
 
-// Clean CSV data - NO FILTRAMOS POR ESTADO, INCLUIMOS TODO
+// Clean CSV data - NUNCA filtrar por estado, incluir TODOS los registros
 export const cleanCSVData = (data: CampaignData[]): CampaignData[] => {
-  console.log("🧹 LIMPIEZA DE DATOS - VERSIÓN: 2.0.1");
+  console.log("🧹 LIMPIEZA DE DATOS - VERSIÓN: 2.0.2");
   console.log("🧹 Total de registros antes de limpieza:", data.length);
   
   // Mostrar distribución por plataforma
@@ -365,7 +363,7 @@ export const cleanCSVData = (data: CampaignData[]): CampaignData[] => {
   });
   console.log("📊 Conteo por estados:", statusCounts);
   
-  // ¡IMPORTANTE! NUNCA FILTRAMOS, solo limpiamos datos como espacios o formatos incorrectos
+  // ¡IMPORTANTE! NO filtrar NADA, solo realizar limpieza básica
   const cleanedData = data.map(item => {
     // Clean platform field if it contains semicolons or other separators
     let platform = item.platform;

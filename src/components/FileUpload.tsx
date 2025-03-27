@@ -1,5 +1,6 @@
+
 import React, { useState, useRef } from 'react';
-import { UploadCloud, FileType, AlertCircle, RefreshCw } from "lucide-react";
+import { UploadCloud, FileType, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -39,7 +40,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
     setError(null);
     
     try {
-      console.log("🔄 INICIO PROCESAMIENTO DE ARCHIVO - VERSIÓN: 2.0.1");
+      console.log("🔄 INICIO PROCESAMIENTO DE ARCHIVO - VERSIÓN: 2.0.2");
       console.log(`📁 Archivo recibido: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
       
       const reader = new FileReader();
@@ -134,16 +135,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
     fileInputRef.current?.click();
   };
 
-  const forceRefresh = () => {
-    console.log("🔄 Forzando recarga completa de la aplicación");
-    sessionStorage.clear();
-    localStorage.clear();
-    window.location.reload();
-    toast.info("Recargando la aplicación", {
-      description: "Se está limpiando la caché y recargando toda la aplicación."
-    });
-  };
-
   return (
     <div className="w-full max-w-2xl mx-auto mb-10">
       <Card
@@ -176,35 +167,24 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
             </p>
           </div>
           
-          <div className="flex gap-4">
-            <Button
-              variant="default"
-              size="lg"
-              className="relative overflow-hidden"
-              onClick={handleButtonClick}
-              disabled={isLoading}
-            >
-              <span className={`transition-all duration-200 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
-                <FileType className="mr-2 h-5 w-5" />
-                Seleccionar archivo CSV
-              </span>
-              
-              {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
-                </div>
-              )}
-            </Button>
+          <Button
+            variant="default"
+            size="lg"
+            className="relative overflow-hidden"
+            onClick={handleButtonClick}
+            disabled={isLoading}
+          >
+            <span className={`transition-all duration-200 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
+              <FileType className="mr-2 h-5 w-5" />
+              Seleccionar archivo CSV
+            </span>
             
-            <Button 
-              variant="outline" 
-              size="lg" 
-              onClick={forceRefresh}
-              className="text-primary border-primary hover:bg-primary/10"
-            >
-              <RefreshCw className="mr-2 h-5 w-5" /> Forzar recarga
-            </Button>
-          </div>
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+              </div>
+            )}
+          </Button>
           
           <p className="text-sm text-muted-foreground">
             Formato soportado: CSV (Soporta formato europeo con , como separador decimal)
